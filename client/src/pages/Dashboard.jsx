@@ -76,7 +76,7 @@ export default function Dashboard() {
               initial="hidden"
               animate="show"
               transition={{ delay: idx * 0.06, duration: 0.35 }}
-              className="rounded-xl bg-gradient-to-br p-4 shadow hover:shadow-md transition-all duration-300 border border-white/0 from-white to-slate-50 hover:scale-[1.015]"
+              className="rounded-xl bg-gradient-to-br p-4 shadow hover:shadow-lg hover:shadow-teal-200/50 transition-all duration-300 border border-white/0 from-white to-slate-50 hover:scale-[1.015] cursor-pointer"
             >
               <div className="flex items-center gap-3">
                 <div className={`h-9 w-9 rounded-lg grid place-items-center ${kpi.iconTint}`}>
@@ -112,7 +112,7 @@ export default function Dashboard() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.05 * i }}
-                  className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-800"
+                  className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-800 hover:shadow-md hover:shadow-teal-200/50 hover:bg-teal-100 transition-all duration-200 cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span>{n.text}</span>
