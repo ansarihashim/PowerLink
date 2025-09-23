@@ -1,5 +1,6 @@
 import { useState } from "react";
 import SortSelect from "../components/ui/SortSelect.jsx";
+import DatePicker from "../components/ui/DatePicker.jsx";
 import { workers } from "../data/workers.js";
 
 export default function AddLoan() {
@@ -70,7 +71,7 @@ export default function AddLoan() {
             {errors.amount && <div className="mt-1 text-xs text-rose-600">{errors.amount}</div>}
           </div>
           <div>
-            <input name="loanDate" value={form.loanDate} onChange={onChange} type="date" className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.loanDate ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+            <DatePicker value={form.loanDate} onChange={(e)=> setForm(f=> ({...f, loanDate: e.target.value}))} />
             {errors.loanDate && <div className="mt-1 text-xs text-rose-600">{errors.loanDate}</div>}
           </div>
           <div className="sm:col-span-2">

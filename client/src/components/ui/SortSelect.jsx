@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 export default function SortSelect({ value, onChange, options, className = "" }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const [highlight, setHighlight] = useState(0);
 
   useEffect(() => {
     const onDown = (e) => {
@@ -10,7 +11,31 @@ export default function SortSelect({ value, onChange, options, className = "" })
       if (!ref.current.contains(e.target)) setOpen(false);
     };
     const onKey = (e) => {
+      if (!ref.current) return;
+      const inside = ref.current.contains(e.target);
       if (e.key === "Escape") setOpen(false);
+      if (!open || !inside) return;
+      const len = options.length;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlight((h) => (h + 1) % len);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlight((h) => (h - 1 + len) % len);
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        setHighlight(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        setHighlight(len - 1);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const opt = options[highlight];
+        if (opt) {
+          onChange?.({ target: { value: opt.value } });
+          setOpen(false);
+        }
+      }
     };
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -21,6 +46,11 @@ export default function SortSelect({ value, onChange, options, className = "" })
   }, []);
 
   const selected = options.find((o) => o.value === value) || options[0];
+  useEffect(() => {
+    if (!open) return;
+    const idx = Math.max(0, options.findIndex((o) => o.value === value));
+    setHighlight(idx);
+  }, [open, value, options]);
 
   return (
     <div ref={ref} className="relative inline-block text-left">
@@ -37,14 +67,14 @@ export default function SortSelect({ value, onChange, options, className = "" })
       {open && (
         <div className="absolute left-0 mt-1 w-40 z-50 rounded-lg border border-teal-100 bg-white shadow-lg shadow-teal-200/40">
           <ul role="listbox" className="py-1 max-h-60 overflow-auto">
-            {options.map((opt) => {
+            {options.map((opt, idx) => {
               const active = opt.value === value;
               return (
                 <li key={opt.value} role="option" aria-selected={active}>
                   <button
                     type="button"
                     onClick={() => { onChange?.({ target: { value: opt.value } }); setOpen(false); }}
-                    className={`flex w-full items-center justify-between px-3 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors ${active ? 'bg-teal-100 text-teal-800' : ''}`}
+                    className={`flex w-full items-center justify-between px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700 ${active ? 'bg-teal-100 text-teal-800' : ''} ${idx === highlight && !active ? 'bg-teal-50' : ''}`}
                   >
                     <span>{opt.label ?? opt.value}</span>
                     {active && (

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import DatePicker from "../components/ui/DatePicker.jsx";
 
 export default function AddWorker() {
   const [form, setForm] = useState({ name: "", phone: "", address: "", joiningDate: "" });
@@ -60,7 +61,7 @@ export default function AddWorker() {
           {field('name', 'Name')}
           {field('phone', 'Phone')}
           <div className="sm:col-span-2">{field('address', 'Address')}</div>
-          {field('joiningDate', 'Joining Date', { type: 'date' })}
+          <DatePicker value={form.joiningDate} onChange={(e)=> setForm(f=> ({...f, joiningDate: e.target.value}))} placeholder="Joining Date" />
           <div className="sm:col-span-2 flex gap-2">
             <button type="submit" className="rounded-md bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 text-sm">Save</button>
             <button type="button" onClick={onCancel} className="rounded-md bg-teal-600 text-white px-4 py-2 text-sm hover:bg-teal-700">Cancel</button>

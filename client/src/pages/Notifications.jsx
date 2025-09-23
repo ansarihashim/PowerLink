@@ -6,6 +6,7 @@ import { expenses } from "../data/expenses.js";
 import { baana } from "../data/baana.js";
 import { beam } from "../data/beam.js";
 import Card from "../components/ui/Card.jsx";
+import SortSelect from "../components/ui/SortSelect.jsx";
 
 export default function Notifications() {
   const [type, setType] = useState("all");
@@ -35,15 +36,20 @@ export default function Notifications() {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <label className="text-slate-600">Type</label>
-          <select className="rounded-md border border-slate-200 px-2 py-1 hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" value={type} onChange={(e)=>setType(e.target.value)}>
-            <option value="all">All</option>
-            <option value="worker">Workers</option>
-            <option value="loan">Loans</option>
-            <option value="installment">Installments</option>
-            <option value="expense">Expenses</option>
-            <option value="baana">Baana</option>
-            <option value="beam">Beam</option>
-          </select>
+          <SortSelect
+            value={type}
+            onChange={(e)=>setType(e.target.value)}
+            options={[
+              { value: 'all', label: 'All' },
+              { value: 'worker', label: 'Workers' },
+              { value: 'loan', label: 'Loans' },
+              { value: 'installment', label: 'Installments' },
+              { value: 'expense', label: 'Expenses' },
+              { value: 'baana', label: 'Baana' },
+              { value: 'beam', label: 'Beam' },
+            ]}
+            className="px-2 py-1"
+          />
         </div>
       </div>
       <Card className="p-4">

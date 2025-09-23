@@ -3,6 +3,8 @@ import { beam as seed } from "../data/beam.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
+import DatePicker from "../components/ui/DatePicker.jsx";
+import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 
 export default function Beam() {
   const [sortKey, setSortKey] = useState("date");
@@ -32,8 +34,7 @@ export default function Beam() {
       </div>
       <Card className="p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-2">
-          <input value={from} onChange={(e)=>setFrom(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" />
-          <input value={to} onChange={(e)=>setTo(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" />
+          <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); }} className="sm:col-span-2" />
         </div>
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
           <span>Sort by:</span>
