@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { baana as seed } from "../data/baana.js";
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
@@ -6,6 +6,7 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import { downloadCSV } from "../utils/export.js";
 
 export default function Baana() {
   const [sortKey, setSortKey] = useState("date");
@@ -14,9 +15,24 @@ export default function Baana() {
   const pageSize = 5;
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
+  const [filtered, setFiltered] = useState(seed);
+
+  // Filter by date range
+  useEffect(() => {
+    const fromD = from ? new Date(from) : null;
+    const toD = to ? new Date(to) : null;
+    const rows = seed.filter((r) => {
+      const d = new Date(r.date);
+      const fromOk = fromD ? d >= fromD : true;
+      const toOk = toD ? d <= toD : true;
+      return fromOk && toOk;
+    });
+    setFiltered(rows);
+    setPage(1);
+  }, [from, to]);
 
   const { rows, totalPages } = useMemo(() => {
-    const sorted = [...seed].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       const A = a[sortKey];
       const B = b[sortKey];
       if (A < B) return sortDir === "asc" ? -1 : 1;
@@ -25,7 +41,19 @@ export default function Baana() {
     });
     const start = (page - 1) * pageSize;
     return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
-  }, [sortKey, sortDir, page]);
+  }, [filtered, sortKey, sortDir, page]);
+
+  const exportCSV = () => {
+    const columns = [
+      { key: 'date', header: 'Date' },
+      { key: 'sacks', header: 'Sacks' },
+    ];
+    const rowsToExport = filtered.map((r) => ({
+      ...r,
+      date: formatDMY(r.date),
+    }));
+    downloadCSV({ filename: 'baana.csv', columns, rows: rowsToExport });
+  };
 
   return (
     <div className="space-y-4">
@@ -53,6 +81,9 @@ export default function Baana() {
         </div>
       </Card>
       <Card className="overflow-x-auto">
+        <div className="flex items-center justify-end p-3">
+          <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
+        </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
