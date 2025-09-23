@@ -1,4 +1,12 @@
 import { motion } from "framer-motion";
+import { useMemo } from "react";
+import { workers } from "../data/workers.js";
+import { baana } from "../data/baana.js";
+import { beam } from "../data/beam.js";
+import { loans } from "../data/loans.js";
+import { installments } from "../data/installments.js";
+import { expenses } from "../data/expenses.js";
+import { useNavigate } from "react-router-dom";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 8 },
@@ -6,6 +14,35 @@ const fadeIn = {
 };
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+
+  const { totalWorkers, totalRemainingLoan, lastBaanaDate, lastBeamDate, recent } = useMemo(() => {
+    const totalWorkers = workers.length;
+    const totalRemainingLoan = workers.reduce((sum, w) => sum + (w.remainingLoan || 0), 0);
+
+    const latestOf = (arr, key) => {
+      if (!arr || arr.length === 0) return "—";
+      const latest = arr.reduce((max, item) => (new Date(item[key]) > new Date(max[key]) ? item : max), arr[0]);
+      return latest[key] || "—";
+    };
+
+    const lastBaanaDate = latestOf(baana, "date");
+    const lastBeamDate = latestOf(beam, "date");
+
+    const updates = [
+      ...workers.map((w) => ({ date: w.joiningDate, text: `Worker joined: ${w.name}` })),
+      ...loans.map((l) => ({ date: l.loanDate, text: `Loan taken: ${l.workerId} - ${l.amount.toLocaleString()}` })),
+      ...installments.map((i) => ({ date: i.date, text: `Installment paid: ${i.worker} - ${i.amount.toLocaleString()}` })),
+      ...expenses.map((e) => ({ date: e.date, text: `Expense added: ${e.category} - ${e.amount.toLocaleString()}` })),
+      ...baana.map((b) => ({ date: b.date, text: `Baana arrival: ${b.sacks} sacks` })),
+      ...beam.map((b) => ({ date: b.date, text: `Beam arrival: ${b.bunches} bunches` })),
+    ]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, 5);
+
+    return { totalWorkers, totalRemainingLoan, lastBaanaDate, lastBeamDate, recent: updates };
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
@@ -24,10 +61,10 @@ export default function Dashboard() {
         <h3 className="mb-3 text-sm font-medium text-gray-700">Key Statistics</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {[
-            { label: "Total Workers", value: "—", iconTint: "bg-emerald-100 text-emerald-700", card: "from-indigo-50 to-white" },
-            { label: "Total Remaining Loan", value: "—", iconTint: "bg-amber-100 text-amber-700", card: "from-blue-50 to-white" },
-            { label: "Last Baana Date", value: "—", iconTint: "bg-indigo-100 text-indigo-700", card: "from-emerald-50 to-white" },
-            { label: "Last Beam Date", value: "—", iconTint: "bg-sky-100 text-sky-700", card: "from-amber-50 to-white" },
+            { label: "Total Workers", value: totalWorkers.toLocaleString(), iconTint: "bg-emerald-100 text-emerald-700", card: "from-indigo-50 to-white" },
+            { label: "Total Remaining Loan", value: totalRemainingLoan.toLocaleString(), iconTint: "bg-amber-100 text-amber-700", card: "from-blue-50 to-white" },
+            { label: "Last Baana Date", value: lastBaanaDate, iconTint: "bg-indigo-100 text-indigo-700", card: "from-emerald-50 to-white" },
+            { label: "Last Beam Date", value: lastBeamDate, iconTint: "bg-sky-100 text-sky-700", card: "from-amber-50 to-white" },
           ].map((kpi, idx) => (
             <motion.div
               key={kpi.label}
@@ -64,15 +101,18 @@ export default function Dashboard() {
             <span className="text-xs rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">5 New</span>
           </div>
           <div className="mt-4 space-y-3">
-            {["New worker added","Loan taken","Installment paid","Expense added","Baana arrival","Beam arrival"].map((n, i) => (
+            {recent.map((n, i) => (
               <motion.div
-                key={i}
+                key={`${n.text}-${n.date}-${i}`}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.05 * i }}
                 className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800"
               >
-                {n}
+                <div className="flex items-center justify-between">
+                  <span>{n.text}</span>
+                  <span className="text-xs text-emerald-700/80">{n.date}</span>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -90,14 +130,24 @@ export default function Dashboard() {
         >
           <h3 className="text-base font-semibold text-slate-800">Quick Actions</h3>
           <div className="mt-4 space-y-3">
-            {["Add New Worker","Add New Loan","Add New Expense"].map((a) => (
-              <button
-                key={a}
-                className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
-              >
-                {a}
-              </button>
-            ))}
+            <button
+              onClick={() => navigate('/add-worker')}
+              className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
+            >
+              Add New Worker
+            </button>
+            <button
+              onClick={() => navigate('/add-loan')}
+              className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
+            >
+              Add New Loan
+            </button>
+            <button
+              onClick={() => navigate('/add-expense')}
+              className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
+            >
+              Add New Expense
+            </button>
           </div>
         </motion.aside>
       </div>

@@ -10,6 +10,9 @@ import Expenses from "./pages/Expenses.jsx";
 import Baana from "./pages/Baana.jsx";
 import Beam from "./pages/Beam.jsx";
 import Calendar from "./pages/Calendar.jsx";
+import AddWorker from "./pages/AddWorker.jsx";
+import AddLoan from "./pages/AddLoan.jsx";
+import AddExpense from "./pages/AddExpense.jsx";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,6 +32,9 @@ export default function App() {
             <Route path="/baana" element={<Baana />} />
             <Route path="/beam" element={<Beam />} />
             <Route path="/calendar" element={<Calendar />} />
+            <Route path="/add-worker" element={<AddWorker />} />
+            <Route path="/add-loan" element={<AddLoan />} />
+            <Route path="/add-expense" element={<AddExpense />} />
           </Routes>
         </main>
       </div>
