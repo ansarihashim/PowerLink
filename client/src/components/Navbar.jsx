@@ -1,6 +1,6 @@
-export default function Navbar({ onMenuClick, onDesktopToggle, offsetClass = "lg:left-[17rem]" }) {
+export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" }) {
   return (
-    <header className={`fixed left-0 ${offsetClass} right-0 top-0 z-30 h-16 bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 text-white shadow-sm`}>
+    <header className={`fixed left-0 ${offsetClass} right-0 top-3 z-30 h-16 bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 text-white shadow-sm`}>
       <div className="h-full flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
@@ -9,14 +9,6 @@ export default function Navbar({ onMenuClick, onDesktopToggle, offsetClass = "lg
             onClick={onMenuClick}
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16" strokeWidth="1.5"/></svg>
-          </button>
-          <button
-            className="hidden lg:inline-flex rounded-md p-2 hover:bg-white/10 transition-all duration-200"
-            aria-label="Toggle sidebar"
-            onClick={onDesktopToggle}
-            title="Collapse/Expand sidebar"
-          >
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h10M4 18h16" strokeWidth="1.5"/></svg>
           </button>
           <h1 className="min-w-0 truncate text-sm sm:text-base font-medium">
             <span className="font-semibold">PowerLink</span>

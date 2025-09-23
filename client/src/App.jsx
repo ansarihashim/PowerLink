@@ -51,10 +51,9 @@ export default function App() {
         />
         <Navbar
           onMenuClick={() => setSidebarOpen((v) => !v)}
-          onDesktopToggle={() => setCollapsed((v) => !v)}
-          offsetClass={collapsed ? "lg:left-[5rem]" : "lg:left-[17rem]"}
+          offsetClass={collapsed ? "lg:left-[6rem]" : "lg:left-[18rem]"}
         />
-  <main className={`pt-20 ${collapsed ? "lg:pl-[5rem]" : "lg:pl-[17rem]"} px-4 sm:px-6 pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
+  <main className={`pt-24 ${collapsed ? "lg:pl-[6rem]" : "lg:pl-[18rem]"} px-4 sm:px-6 pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
           <AnimatedRoutes />
         </main>
       </div>
