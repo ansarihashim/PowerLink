@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { installments as seed } from "../data/installments.js";
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
@@ -6,14 +7,18 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import { downloadCSV } from "../utils/export.js";
 
 export default function Installments() {
+  const [searchParams] = useSearchParams();
+  const initialFrom = searchParams.get('from') || "";
+  const initialTo = searchParams.get('to') || "";
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useState(initialFrom);
+  const [to, setTo] = useState(initialTo);
   const [filtered, setFiltered] = useState(seed);
 
   useEffect(() => {
@@ -40,6 +45,20 @@ export default function Installments() {
     const start = (page - 1) * pageSize;
     return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
   }, [filtered, sortKey, sortDir, page]);
+
+  const exportCSV = () => {
+    const columns = [
+      { key: 'loanId', header: 'Loan ID' },
+      { key: 'worker', header: 'Worker' },
+      { key: 'amount', header: 'Installment Amount' },
+      { key: 'date', header: 'Date Paid' },
+    ];
+    const rowsToExport = filtered.map(i => ({
+      ...i,
+      date: formatDMY(i.date),
+    }));
+    downloadCSV({ filename: 'installments.csv', columns, rows: rowsToExport });
+  };
 
   return (
     <div className="space-y-4">
@@ -69,6 +88,9 @@ export default function Installments() {
         </div>
       </Card>
       <Card className="overflow-x-auto">
+        <div className="flex items-center justify-end p-3">
+          <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
+        </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">

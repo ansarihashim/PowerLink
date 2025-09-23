@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
@@ -6,15 +7,19 @@ import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { workers as seed } from "../data/workers.js";
 import { formatDMY } from "../utils/date.js";
+import { downloadCSV } from "../utils/export.js";
 
 export default function Workers() {
+  const [searchParams] = useSearchParams();
+  const initialFrom = searchParams.get('from') || "";
+  const initialTo = searchParams.get('to') || "";
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const [q, setQ] = useState("");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useState(initialFrom);
+  const [to, setTo] = useState(initialTo);
   const [filtered, setFiltered] = useState(seed);
 
   useEffect(() => {
@@ -42,6 +47,23 @@ export default function Workers() {
     const start = (page - 1) * pageSize;
     return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
   }, [filtered, sortKey, sortDir, page]);
+
+  const exportCSV = () => {
+    const columns = [
+      { key: 'id', header: 'ID' },
+      { key: 'name', header: 'Name' },
+      { key: 'phone', header: 'Phone' },
+      { key: 'address', header: 'Address' },
+      { key: 'joiningDate', header: 'Joining Date' },
+      { key: 'totalLoan', header: 'Loan Taken' },
+      { key: 'remainingLoan', header: 'Remaining Loan Amount' },
+    ];
+    const rowsToExport = filtered.map(w => ({
+      ...w,
+      joiningDate: formatDMY(w.joiningDate),
+    }));
+    downloadCSV({ filename: 'workers.csv', columns, rows: rowsToExport });
+  };
 
   return (
     <div className="space-y-4">
@@ -74,6 +96,9 @@ export default function Workers() {
       </Card>
       {/* Table */}
       <Card className="overflow-x-auto">
+        <div className="flex items-center justify-end p-3">
+          <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
+        </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import DatePicker from "./DatePicker.jsx";
 import { dmyToYMD, formatDMY, isValidDMY } from "../../utils/date.js";
 
@@ -9,6 +10,7 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
   const [tmpStartText, setTmpStartText] = useState(start ? formatDMY(start) : "");
   const [tmpEndText, setTmpEndText] = useState(end ? formatDMY(end) : "");
   const ref = useRef(null);
+  const [portalStyle, setPortalStyle] = useState({ top: 0, left: 0, width: 0 });
 
   useEffect(() => { setTmpStart(start || ""); setTmpStartText(start ? formatDMY(start) : ""); }, [start]);
   useEffect(() => { setTmpEnd(end || ""); setTmpEndText(end ? formatDMY(end) : ""); }, [end]);
@@ -20,6 +22,26 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, []);
+
+  // Position portal popover relative to trigger
+  useEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const el = ref.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const top = Math.round(rect.bottom + 6);
+      const left = Math.round(Math.min(rect.left, window.innerWidth - 340));
+      setPortalStyle({ top, left, width: Math.round(rect.width) });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => {
+      window.removeEventListener('resize', place);
+      window.removeEventListener('scroll', place, true);
+    };
+  }, [open]);
 
   const label = tmpStart && tmpEnd ? `${formatDMY(tmpStart)} → ${formatDMY(tmpEnd)}` : (tmpStart ? `${formatDMY(tmpStart)} → …` : (tmpEnd ? `… → ${formatDMY(tmpEnd)}` : "Select date range"));
   const appliedLabel = start && end ? `${formatDMY(start)} → ${formatDMY(end)}` : (start ? `${formatDMY(start)} → …` : (end ? `… → ${formatDMY(end)}` : ""));
@@ -47,8 +69,11 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
       {!open && appliedLabel && (
         <div className="mt-1 text-xs text-slate-500">Filtered by: {appliedLabel}</div>
       )}
-      {open && (
-        <div className="absolute left-0 z-50 mt-1 rounded-lg border border-teal-100 bg-white p-3 shadow-lg shadow-teal-200/40">
+      {open && createPortal(
+        <div
+          className="z-[9999] rounded-lg border border-teal-100 bg-white p-3 shadow-lg shadow-teal-200/40"
+          style={{ position: 'fixed', top: portalStyle.top, left: portalStyle.left, minWidth: Math.max(320, portalStyle.width) }}
+        >
           <div className="mb-2 grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
             <div>Start</div>
             <div>End</div>
@@ -122,7 +147,7 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
