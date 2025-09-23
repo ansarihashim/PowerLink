@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
+import SortSelect from "../components/ui/SortSelect.jsx";
 import { workers as seed } from "../data/workers.js";
 
 export default function Workers() {
@@ -54,12 +55,16 @@ export default function Workers() {
         </div>
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
           <span>Sort by:</span>
-          <select className="rounded-md border border-gray-200 px-2 py-1 hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" value={sortKey} onChange={(e)=>setSortKey(e.target.value)}>
-            <option value="name">Name</option>
-            <option value="joiningDate">Joining Date</option>
-            <option value="totalLoan">Loan</option>
-            <option value="remainingLoan">Remaining</option>
-          </select>
+          <SortSelect
+            value={sortKey}
+            onChange={(e)=>setSortKey(e.target.value)}
+            options={[
+              { value: 'name', label: 'Name' },
+              { value: 'joiningDate', label: 'Joining Date' },
+              { value: 'totalLoan', label: 'Loan' },
+              { value: 'remainingLoan', label: 'Remaining' },
+            ]}
+          />
           <Button variant="outline" className="px-2 py-1" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
             {sortDir === 'asc' ? 'Asc' : 'Desc'}
           </Button>

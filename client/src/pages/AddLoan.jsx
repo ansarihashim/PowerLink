@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SortSelect from "../components/ui/SortSelect.jsx";
 import { workers } from "../data/workers.js";
 
 export default function AddLoan() {
@@ -53,12 +54,15 @@ export default function AddLoan() {
   {success && <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800">{success}</div>}
         <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div>
-            <select name="workerId" value={form.workerId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.workerId ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}>
-              <option value="">Select Worker ID</option>
-              {workers.map((w) => (
-                <option key={w.id} value={w.id}>{w.id} — {w.name}</option>
-              ))}
-            </select>
+            <SortSelect
+              value={form.workerId}
+              onChange={(e)=> setForm(f=> ({...f, workerId: e.target.value}))}
+              options={[
+                { value: "", label: "Select Worker ID" },
+                ...workers.map((w)=> ({ value: w.id, label: `${w.id} — ${w.name}` }))
+              ]}
+              className="px-3 py-2"
+            />
             {errors.workerId && <div className="mt-1 text-xs text-rose-600">{errors.workerId}</div>}
           </div>
           <div>

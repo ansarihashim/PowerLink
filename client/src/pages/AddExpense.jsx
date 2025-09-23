@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SortSelect from "../components/ui/SortSelect.jsx";
 
 export default function AddExpense() {
   const [form, setForm] = useState({ category: "tea", amount: "", date: "" });
@@ -49,14 +50,19 @@ export default function AddExpense() {
   {success && <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800">{success}</div>}
         <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div>
-            <select name="category" value={form.category} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.category ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}>
-              <option value="tea">tea</option>
-              <option value="workshop">workshop</option>
-              <option value="mistary">mistary</option>
-              <option value="mukadam">mukadam</option>
-              <option value="maintenance">maintenance</option>
-              <option value="other">other</option>
-            </select>
+            <SortSelect
+              value={form.category}
+              onChange={(e)=> setForm(f=> ({...f, category: e.target.value}))}
+              options={[
+                { value: "tea", label: "tea" },
+                { value: "workshop", label: "workshop" },
+                { value: "mistary", label: "mistary" },
+                { value: "mukadam", label: "mukadam" },
+                { value: "maintenance", label: "maintenance" },
+                { value: "other", label: "other" },
+              ]}
+              className="px-3 py-2"
+            />
             {errors.category && <div className="mt-1 text-xs text-rose-600">{errors.category}</div>}
           </div>
           <div>

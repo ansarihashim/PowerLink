@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { expenses as seed } from "../data/expenses.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
+import SortSelect from "../components/ui/SortSelect.jsx";
 
 export default function Expenses() {
   const [sortKey, setSortKey] = useState("date");
@@ -54,23 +55,32 @@ export default function Expenses() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               <input value={from} onChange={(e)=>setFrom(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" />
               <input value={to} onChange={(e)=>setTo(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" />
-              <select value={category} onChange={(e)=>setCategory(e.target.value)} className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200">
-                <option value="all">All categories</option>
-                <option value="tea">tea</option>
-                <option value="workshop">workshop</option>
-                <option value="mistary">mistary</option>
-                <option value="mukadam">mukadam</option>
-                <option value="maintenance">maintenance</option>
-                <option value="other">other</option>
-              </select>
+              <SortSelect
+                value={category}
+                onChange={(e)=>setCategory(e.target.value)}
+                options={[
+                  { value: 'all', label: 'All categories' },
+                  { value: 'tea', label: 'tea' },
+                  { value: 'workshop', label: 'workshop' },
+                  { value: 'mistary', label: 'mistary' },
+                  { value: 'mukadam', label: 'mukadam' },
+                  { value: 'maintenance', label: 'maintenance' },
+                  { value: 'other', label: 'other' },
+                ]}
+                className="px-3 py-2"
+              />
             </div>
             <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
               <span>Sort by:</span>
-              <select className="rounded-md border border-gray-200 px-2 py-1 hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" value={sortKey} onChange={(e)=>setSortKey(e.target.value)}>
-                <option value="date">Date</option>
-                <option value="amount">Amount</option>
-                <option value="category">Category</option>
-              </select>
+              <SortSelect
+                value={sortKey}
+                onChange={(e)=>setSortKey(e.target.value)}
+                options={[
+                  { value: 'date', label: 'Date' },
+                  { value: 'amount', label: 'Amount' },
+                  { value: 'category', label: 'Category' },
+                ]}
+              />
               <Button variant="outline" className="px-2 py-1" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
                 {sortDir === 'asc' ? 'Asc' : 'Desc'}
               </Button>

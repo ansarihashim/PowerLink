@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
+import SortSelect from "../components/ui/SortSelect.jsx";
 import { loans as seed } from "../data/loans.js";
 
 export default function Loans() {
@@ -50,11 +51,15 @@ export default function Loans() {
         </div>
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
           <span>Sort by:</span>
-          <select className="rounded-md border border-gray-200 px-2 py-1 hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" value={sortKey} onChange={(e)=>setSortKey(e.target.value)}>
-            <option value="loanDate">Loan Date</option>
-            <option value="amount">Loan Amount</option>
-            <option value="remaining">Remaining</option>
-          </select>
+          <SortSelect
+            value={sortKey}
+            onChange={(e)=>setSortKey(e.target.value)}
+            options={[
+              { value: 'loanDate', label: 'Loan Date' },
+              { value: 'amount', label: 'Loan Amount' },
+              { value: 'remaining', label: 'Remaining' },
+            ]}
+          />
           <Button variant="outline" className="px-2 py-1" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
             {sortDir === 'asc' ? 'Asc' : 'Desc'}
           </Button>

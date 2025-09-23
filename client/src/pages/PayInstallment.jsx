@@ -1,4 +1,5 @@
 import { useState } from "react";
+import SortSelect from "../components/ui/SortSelect.jsx";
 import { loans } from "../data/loans.js";
 
 export default function PayInstallment() {
@@ -50,12 +51,15 @@ export default function PayInstallment() {
   {success && <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800">{success}</div>}
         <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div>
-            <select name="loanId" value={form.loanId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.loanId ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}>
-              <option value="">Select Loan</option>
-              {loans.map((l) => (
-                <option key={l.id} value={l.id}>{l.id} — {l.workerId}</option>
-              ))}
-            </select>
+            <SortSelect
+              value={form.loanId}
+              onChange={(e)=> setForm(f=> ({...f, loanId: e.target.value}))}
+              options={[
+                { value: "", label: "Select Loan" },
+                ...loans.map((l)=> ({ value: l.id, label: `${l.id} — ${l.workerId}` }))
+              ]}
+              className="px-3 py-2"
+            />
             {errors.loanId && <div className="mt-1 text-xs text-rose-600">{errors.loanId}</div>}
           </div>
           <div>
