@@ -42,7 +42,11 @@ export default function App() {
 
   return (
     <BrowserRouter>
-  <div className="min-h-screen bg-slate-50">
+  <div className="min-h-screen bg-slate-50" style={{
+    ['--pl-sidebar-w']: collapsed ? '5rem' : '16rem',
+    ['--pl-gap']: '2rem',
+    ['--pl-offset']: 'calc(var(--pl-sidebar-w) + var(--pl-gap))',
+  }}>
         <Sidebar
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
@@ -51,10 +55,14 @@ export default function App() {
         />
         <Navbar
           onMenuClick={() => setSidebarOpen((v) => !v)}
-          offsetClass={collapsed ? "lg:left-[6rem]" : "lg:left-[18rem]"}
+          offsetClass={"lg:left-[var(--pl-offset)]"}
         />
-  <main className={`pt-24 ${collapsed ? "lg:pl-[6rem]" : "lg:pl-[18rem]"} px-4 sm:px-6 pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
-          <AnimatedRoutes />
+  <main className={`relative pt-24 lg:pl-[var(--pl-offset)] px-4 sm:px-6 md:px-8 pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
+    {/* Top fade and clip to prevent content showing in navbar gap */}
+    <div className="pointer-events-none absolute -top-8 left-0 right-0 h-12 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent" />
+          <div className="max-w-7xl mx-auto">
+            <AnimatedRoutes />
+          </div>
         </main>
       </div>
     </BrowserRouter>

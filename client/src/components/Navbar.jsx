@@ -1,7 +1,8 @@
 export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" }) {
   return (
-    <header className={`fixed left-0 ${offsetClass} right-0 top-3 z-30 h-16 bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 text-white shadow-sm`}>
-      <div className="h-full flex items-center justify-between px-4 sm:px-6">
+    <header className={`fixed left-0 ${offsetClass} right-0 top-4 z-30`}>
+      <div className="max-w-7xl mx-auto pr-8">
+        <div className="h-16 w-full bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 text-white shadow-sm rounded-xl flex items-center justify-between px-6">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             className="lg:hidden rounded-md p-2 hover:bg-white/10 transition-all duration-200"
@@ -43,6 +44,7 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
               </button>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </header>

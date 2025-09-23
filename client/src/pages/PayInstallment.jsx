@@ -50,21 +50,21 @@ export default function PayInstallment() {
   {success && <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800">{success}</div>}
         <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div>
-            <select name="loanId" value={form.loanId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm ${errors.loanId ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
+            <select name="loanId" value={form.loanId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm ${errors.loanId ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}>
               <option value="">Select Loan</option>
               {loans.map((l) => (
                 <option key={l.id} value={l.id}>{l.id} — {l.workerId}</option>
               ))}
             </select>
-            {errors.loanId && <div className="mt-1 text-xs text-amber-600">{errors.loanId}</div>}
+            {errors.loanId && <div className="mt-1 text-xs text-rose-600">{errors.loanId}</div>}
           </div>
           <div>
-            <input name="amount" value={form.amount} onChange={onChange} type="number" min={0} placeholder="Amount" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.amount ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`} />
-            {errors.amount && <div className="mt-1 text-xs text-amber-600">{errors.amount}</div>}
+            <input name="amount" value={form.amount} onChange={onChange} type="number" min={0} placeholder="Amount" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.amount ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+            {errors.amount && <div className="mt-1 text-xs text-rose-600">{errors.amount}</div>}
           </div>
           <div>
-            <input name="date" value={form.date} onChange={onChange} type="date" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.date ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`} />
-            {errors.date && <div className="mt-1 text-xs text-amber-600">{errors.date}</div>}
+            <input name="date" value={form.date} onChange={onChange} type="date" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.date ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+            {errors.date && <div className="mt-1 text-xs text-rose-600">{errors.date}</div>}
           </div>
           <div className="sm:col-span-2 flex gap-2">
             <button type="submit" className="rounded-md bg-gradient-to-r from-teal-500 to-cyan-600 text-white px-4 py-2 text-sm">Save</button>

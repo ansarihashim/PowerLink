@@ -49,11 +49,13 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Welcome Banner */}
       <motion.div
-        className="rounded-xl bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 p-6 text-white shadow"
+        className="relative overflow-hidden rounded-xl bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 p-6 text-white shadow max-w-7xl mx-auto"
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
       >
+        {/* subtle wave/pattern accents */}
+        <div className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(120px_60px_at_20%_0%,rgba(255,255,255,0.35),rgba(255,255,255,0)_60%),radial-gradient(160px_80px_at_70%_0%,rgba(255,255,255,0.25),rgba(255,255,255,0)_60%)]" />
         <h2 className="text-2xl font-semibold tracking-tight">Welcome back, Admin!</h2>
         <p className="text-white/90">Here’s a snapshot of your powerloom network.</p>
       </motion.div>
