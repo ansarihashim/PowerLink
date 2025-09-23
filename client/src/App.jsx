@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useState } from "react";
 import Sidebar from "./components/Sidebar.jsx";
 import Navbar from "./components/Navbar.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
@@ -11,12 +12,14 @@ import Beam from "./pages/Beam.jsx";
 import Calendar from "./pages/Calendar.jsx";
 
 export default function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50">
-        <Sidebar />
-        <Navbar />
-        <main className="pt-20 pl-64 pr-6 pb-8">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <Navbar onMenuClick={() => setSidebarOpen((v) => !v)} />
+        <main className="pt-20 lg:pl-64 px-4 sm:px-6 pb-8 transition-all duration-300 ease-in-out">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/workers" element={<Workers />} />

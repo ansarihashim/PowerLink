@@ -1,11 +1,21 @@
-export default function Navbar() {
+export default function Navbar({ onMenuClick }) {
   return (
-    <header className="fixed left-64 right-0 top-0 z-30 h-16 border-b border-gray-200 bg-white/90 backdrop-blur">
-      <div className="h-full flex items-center justify-between px-6">
-        <h1 className="text-sm sm:text-base font-medium text-gray-800">
-          PowerLink - Powerloom Dashboard
-        </h1>
-        <div className="flex items-center gap-4">
+    <header className="fixed left-0 lg:left-64 right-0 top-0 z-30 h-16 border-b border-gray-200 bg-white/90 backdrop-blur">
+      <div className="h-full flex items-center justify-between px-4 sm:px-6">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <button
+            className="lg:hidden rounded-md p-2 hover:bg-gray-100 transition-all duration-200"
+            aria-label="Open sidebar"
+            onClick={onMenuClick}
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h16" strokeWidth="1.5"/></svg>
+          </button>
+          <h1 className="min-w-0 truncate text-sm sm:text-base font-medium text-gray-800">
+            <span className="font-semibold">PowerLink</span>
+            <span className="hidden sm:inline"> – Powerloom Dashboard</span>
+          </h1>
+        </div>
+        <div className="flex items-center gap-3 sm:gap-4 shrink-0">
           <button
             className="relative rounded-full p-2 text-gray-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
             aria-label="Notifications"
@@ -14,7 +24,7 @@ export default function Navbar() {
           </button>
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-full bg-emerald-600 text-white grid place-items-center text-sm">AD</div>
-            <div className="text-sm">
+            <div className="hidden sm:block text-sm">
               <div className="font-medium text-gray-800">Admin</div>
               <div className="text-gray-500">Administrator</div>
             </div>

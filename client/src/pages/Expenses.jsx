@@ -6,7 +6,7 @@ export default function Expenses() {
         <div className="lg:col-span-2 space-y-4">
           {/* Filters */}
           <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
               <input type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
               <input type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
               <select className="rounded-md border border-gray-200 px-3 py-2 text-sm">
@@ -22,17 +22,17 @@ export default function Expenses() {
             </div>
           </div>
           {/* Table */}
-          <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gray-50">
                 <tr className="text-gray-600">
                   {['Category','Amount','Date'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                    <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3">—</td>
                   <td className="px-4 py-3">—</td>
                   <td className="px-4 py-3">—</td>
