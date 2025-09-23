@@ -12,10 +12,13 @@ function fromYMD(s) {
 export default function DatePicker({ value, onChange, min, max, placeholder = "Select date", className = "", inline = false }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => fromYMD(value) || new Date());
+  const [focusDate, setFocusDate] = useState(() => fromYMD(value) || new Date());
   const ref = useRef(null);
 
   useEffect(() => {
-    setView(fromYMD(value) || new Date());
+    const d = fromYMD(value) || new Date();
+    setView(d);
+    setFocusDate(d);
   }, [value]);
 
   useEffect(() => {
@@ -71,9 +74,31 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
     setOpen(false);
   };
 
+  const ensureViewVisible = (d) => {
+    if (!d) return;
+    const monthKey = (dt) => `${dt.getFullYear()}-${dt.getMonth()}`;
+    if (monthKey(d) !== monthKey(view)) {
+      setView(new Date(d.getFullYear(), d.getMonth(), 1));
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    let d = new Date(focusDate);
+    if (e.key === 'ArrowLeft') { e.preventDefault(); d.setDate(d.getDate()-1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); d.setDate(d.getDate()+1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); d.setDate(d.getDate()-7); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); d.setDate(d.getDate()+7); }
+    else if (e.key === 'PageUp') { e.preventDefault(); d.setMonth(d.getMonth()-1); }
+    else if (e.key === 'PageDown') { e.preventDefault(); d.setMonth(d.getMonth()+1); }
+    else if (e.key === 'Enter') { e.preventDefault(); pick(d); return; }
+    else { return; }
+    setFocusDate(d);
+    ensureViewVisible(d);
+  };
+
   if (inline) {
     return (
-      <div className={`rounded-lg border border-teal-100 bg-white p-2 ${className}`}>
+      <div className={`rounded-lg border border-teal-100 bg-white p-2 ${className}`} tabIndex={0} onKeyDown={handleKeyDown}>
         <div className="flex items-center justify-between px-1 py-2">
           <button type="button" className="rounded p-1 hover:bg-teal-50" onClick={()=> setView(new Date(view.getFullYear(), view.getMonth()-1, 1))} aria-label="Previous month">
             <svg className="h-4 w-4 text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.78 15.53a.75.75 0 01-1.06 0l-5-5a.75.75 0 010-1.06l5-5a.75.75 0 111.06 1.06L8.31 10l4.47 4.47a.75.75 0 010 1.06z" clipRule="evenodd"/></svg>
@@ -93,13 +118,14 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
             const ymd = toYMD(d);
             const isSel = selectedDate && toYMD(selectedDate) === ymd;
             const disabled = isDisabled(d);
+            const isFocus = focusDate && toYMD(focusDate) === ymd;
             return (
               <button
                 key={ymd}
                 type="button"
                 onClick={() => pick(d)}
                 disabled={disabled}
-                className={`rounded-md py-1.5 text-sm transition-colors hover:bg-teal-50 hover:text-teal-700 ${other ? 'text-slate-400' : 'text-slate-700'} ${isSel ? 'bg-teal-100 text-teal-800' : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                className={`rounded-md py-1.5 text-sm transition-colors hover:bg-teal-50 hover:text-teal-700 ${other ? 'text-slate-400' : 'text-slate-700'} ${isSel ? 'bg-teal-100 text-teal-800' : ''} ${isFocus && !isSel ? 'ring-1 ring-teal-300' : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
               >
                 {d.getDate()}
               </button>
@@ -122,7 +148,7 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
         <span className={selectedDate ? "text-slate-800" : "text-slate-400"}>{displayLabel}</span>
       </button>
       {open && (
-        <div className="absolute left-0 z-50 mt-1 w-72 rounded-lg border border-teal-100 bg-white p-2 shadow-lg shadow-teal-200/40">
+        <div className="absolute left-0 z-50 mt-1 w-72 rounded-lg border border-teal-100 bg-white p-2 shadow-lg shadow-teal-200/40" tabIndex={0} onKeyDown={handleKeyDown}>
           <div className="flex items-center justify-between px-1 py-2">
             <button type="button" className="rounded p-1 hover:bg-teal-50" onClick={()=> setView(new Date(view.getFullYear(), view.getMonth()-1, 1))} aria-label="Previous month">
               <svg className="h-4 w-4 text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.78 15.53a.75.75 0 01-1.06 0l-5-5a.75.75 0 010-1.06l5-5a.75.75 0 111.06 1.06L8.31 10l4.47 4.47a.75.75 0 010 1.06z" clipRule="evenodd"/></svg>
@@ -142,13 +168,14 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
               const ymd = toYMD(d);
               const isSel = selectedDate && toYMD(selectedDate) === ymd;
               const disabled = isDisabled(d);
+              const isFocus = focusDate && toYMD(focusDate) === ymd;
               return (
                 <button
                   key={ymd}
                   type="button"
                   onClick={() => pick(d)}
                   disabled={disabled}
-                  className={`rounded-md py-1.5 text-sm transition-colors hover:bg-teal-50 hover:text-teal-700 ${other ? 'text-slate-400' : 'text-slate-700'} ${isSel ? 'bg-teal-100 text-teal-800' : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                  className={`rounded-md py-1.5 text-sm transition-colors hover:bg-teal-50 hover:text-teal-700 ${other ? 'text-slate-400' : 'text-slate-700'} ${isSel ? 'bg-teal-100 text-teal-800' : ''} ${isFocus && !isSel ? 'ring-1 ring-teal-300' : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                 >
                   {d.getDate()}
                 </button>
