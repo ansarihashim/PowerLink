@@ -117,7 +117,7 @@ export default function Dashboard() {
             ))}
           </div>
           <div className="mt-4">
-            <button className="rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-3 py-2 text-sm text-white shadow hover:shadow-md transition-all duration-300">View All Notifications</button>
+            <button onClick={() => navigate('/notifications')} className="rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-3 py-2 text-sm text-white shadow hover:shadow-md transition-all duration-300">View All Notifications</button>
           </div>
         </motion.section>
 
