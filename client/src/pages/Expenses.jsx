@@ -106,7 +106,7 @@ export default function Expenses() {
           </div>
         </div>
         <aside>
-          <Card className="border-teal-200 bg-teal-50">
+          <Card className="border-teal-200 bg-teal-50 p-4">
           <h3 className="text-base font-semibold text-teal-800">Summary</h3>
           <div className="mt-3 rounded-lg border border-teal-200 bg-teal-100 p-4 text-sm text-teal-800">
             Total Expenses (all): <span className="font-semibold">{total.toLocaleString()}</span>
