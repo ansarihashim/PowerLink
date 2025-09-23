@@ -19,7 +19,7 @@ export default function App() {
       <div className="min-h-screen bg-gray-50">
         <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <Navbar onMenuClick={() => setSidebarOpen((v) => !v)} />
-        <main className="pt-20 lg:pl-64 px-4 sm:px-6 pb-8 transition-all duration-300 ease-in-out">
+        <main className="pt-20 lg:pl-[17rem] px-4 sm:px-6 pb-8 transition-all duration-300 ease-in-out">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/workers" element={<Workers />} />

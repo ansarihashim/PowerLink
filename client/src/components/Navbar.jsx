@@ -1,6 +1,6 @@
 export default function Navbar({ onMenuClick }) {
   return (
-    <header className="fixed left-0 lg:left-64 right-0 top-0 z-30 h-16 border-b border-gray-200 bg-white/90 backdrop-blur">
+    <header className="fixed left-0 lg:left-[17rem] right-0 top-0 z-30 h-16 border-b border-gray-200 bg-white/90 backdrop-blur">
       <div className="h-full flex items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
