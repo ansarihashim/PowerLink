@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { expenses as seed } from "../data/expenses.js";
+import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
@@ -102,7 +103,7 @@ export default function Expenses() {
                   <tr key={e.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                     <td className="px-4 py-3">{e.category}</td>
                     <td className="px-4 py-3">{e.amount.toLocaleString()}</td>
-                    <td className="px-4 py-3">{e.date}</td>
+                    <td className="px-4 py-3">{formatDMY(e.date)}</td>
                   </tr>
                 ))}
               </tbody>

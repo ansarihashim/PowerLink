@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { baana as seed } from "../data/baana.js";
+import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
@@ -63,7 +64,7 @@ export default function Baana() {
           <tbody className="divide-y divide-gray-100">
             {rows.map((b, idx) => (
               <tr key={b.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                <td className="px-4 py-3">{b.date}</td>
+                <td className="px-4 py-3">{formatDMY(b.date)}</td>
                 <td className="px-4 py-3">{b.sacks}</td>
               </tr>
             ))}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { installments as seed } from "../data/installments.js";
+import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
@@ -82,7 +83,7 @@ export default function Installments() {
                 <td className="px-4 py-3">{i.loanId}</td>
                 <td className="px-4 py-3">{i.worker}</td>
                 <td className="px-4 py-3">{i.amount.toLocaleString()}</td>
-                <td className="px-4 py-3">{i.date}</td>
+                <td className="px-4 py-3">{formatDMY(i.date)}</td>
               </tr>
             ))}
           </tbody>

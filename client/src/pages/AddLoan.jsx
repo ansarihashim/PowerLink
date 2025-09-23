@@ -2,6 +2,7 @@ import { useState } from "react";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import { workers } from "../data/workers.js";
+import { formatDMY } from "../utils/date.js";
 
 export default function AddLoan() {
   const [form, setForm] = useState({ workerId: "", amount: "", loanDate: "", reason: "" });

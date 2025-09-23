@@ -5,6 +5,7 @@ import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { workers as seed } from "../data/workers.js";
+import { formatDMY } from "../utils/date.js";
 
 export default function Workers() {
   const [sortKey, setSortKey] = useState("name");
@@ -88,7 +89,7 @@ export default function Workers() {
                 <td className="px-4 py-3">{w.name}</td>
                 <td className="px-4 py-3">{w.phone}</td>
                 <td className="px-4 py-3">{w.address}</td>
-                <td className="px-4 py-3">{w.joiningDate}</td>
+                <td className="px-4 py-3">{formatDMY(w.joiningDate)}</td>
                 <td className="px-4 py-3">{w.totalLoan.toLocaleString()}</td>
                 <td className="px-4 py-3">{w.remainingLoan.toLocaleString()}</td>
               </tr>

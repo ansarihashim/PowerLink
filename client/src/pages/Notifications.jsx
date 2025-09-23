@@ -6,6 +6,7 @@ import { expenses } from "../data/expenses.js";
 import { baana } from "../data/baana.js";
 import { beam } from "../data/beam.js";
 import Card from "../components/ui/Card.jsx";
+import { formatDMY } from "../utils/date.js";
 import SortSelect from "../components/ui/SortSelect.jsx";
 
 export default function Notifications() {
@@ -61,7 +62,7 @@ export default function Notifications() {
                   <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
                   <span className="text-sm text-slate-800">{n.text}</span>
                 </div>
-                <span className="text-xs text-slate-500">{n.date}</span>
+                <span className="text-xs text-slate-500">{formatDMY(n.date)}</span>
               </div>
             </li>
           ))}

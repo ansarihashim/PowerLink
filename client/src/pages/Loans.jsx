@@ -5,6 +5,7 @@ import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { loans as seed } from "../data/loans.js";
+import { formatDMY } from "../utils/date.js";
 
 export default function Loans() {
   const [sortKey, setSortKey] = useState("loanDate");
@@ -85,7 +86,7 @@ export default function Loans() {
               <tr key={l.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                 <td className="px-4 py-3">{l.workerId}</td>
                 <td className="px-4 py-3">{l.amount.toLocaleString()}</td>
-                <td className="px-4 py-3">{l.loanDate}</td>
+                <td className="px-4 py-3">{formatDMY(l.loanDate)}</td>
                 <td className="px-4 py-3">{l.remaining.toLocaleString()}</td>
                 <td className="px-4 py-3">{l.reason}</td>
               </tr>

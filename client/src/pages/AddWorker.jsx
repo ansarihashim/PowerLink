@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatDMY } from "../utils/date.js";
 import DatePicker from "../components/ui/DatePicker.jsx";
 
 export default function AddWorker() {
@@ -76,7 +77,7 @@ export default function AddWorker() {
             {added.map((w) => (
               <li key={w.id} className="flex items-center justify-between">
                 <span>{w.id} — {w.name}</span>
-                <span className="text-slate-500">Joined: {w.joiningDate}</span>
+                <span className="text-slate-500">Joined: {formatDMY(w.joiningDate)}</span>
               </li>
             ))}
           </ul>

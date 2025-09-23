@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toYMD as fmtYMD, fromYMD as parseYMD } from "../../utils/date.js";
 
 function pad(n) { return n < 10 ? `0${n}` : `${n}`; }
-function toYMD(d) { return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function toYMD(d) { return fmtYMD(d); }
 function fromYMD(s) {
   if (!s) return null;
   const [y,m,dd] = s.split("-").map(Number);
@@ -9,6 +10,7 @@ function fromYMD(s) {
   return new Date(y, m-1, dd);
 }
 
+function toDMY(d) { return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; }
 export default function DatePicker({ value, onChange, min, max, placeholder = "Select date", className = "", inline = false }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => fromYMD(value) || new Date());
@@ -58,7 +60,7 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
   }, [monthStart, monthEnd, view]);
 
   const selectedDate = fromYMD(value);
-  const displayLabel = selectedDate ? toYMD(selectedDate) : placeholder;
+  const displayLabel = selectedDate ? toDMY(selectedDate) : placeholder;
 
   const isDisabled = (d) => {
     const ymd = toYMD(d);

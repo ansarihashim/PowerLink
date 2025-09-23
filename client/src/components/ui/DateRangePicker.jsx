@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import DatePicker from "./DatePicker.jsx";
+import { dmyToYMD, formatDMY, isValidDMY } from "../../utils/date.js";
 
 export default function DateRangePicker({ start, end, onChange, className = "" }) {
   const [open, setOpen] = useState(false);
   const [tmpStart, setTmpStart] = useState(start || "");
   const [tmpEnd, setTmpEnd] = useState(end || "");
+  const [tmpStartText, setTmpStartText] = useState(start ? formatDMY(start) : "");
+  const [tmpEndText, setTmpEndText] = useState(end ? formatDMY(end) : "");
   const ref = useRef(null);
 
-  useEffect(() => { setTmpStart(start || ""); }, [start]);
-  useEffect(() => { setTmpEnd(end || ""); }, [end]);
+  useEffect(() => { setTmpStart(start || ""); setTmpStartText(start ? formatDMY(start) : ""); }, [start]);
+  useEffect(() => { setTmpEnd(end || ""); setTmpEndText(end ? formatDMY(end) : ""); }, [end]);
 
   useEffect(() => {
     const onDown = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -18,11 +21,11 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
     return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
   }, []);
 
-  const label = tmpStart && tmpEnd ? `${tmpStart} → ${tmpEnd}` : (tmpStart ? `${tmpStart} → …` : (tmpEnd ? `… → ${tmpEnd}` : "Select date range"));
-  const appliedLabel = start && end ? `${start} → ${end}` : (start ? `${start} → …` : (end ? `… → ${end}` : ""));
-  const isValidYMD = (s) => /^(\d{4})-(\d{2})-(\d{2})$/.test(s);
+  const label = tmpStart && tmpEnd ? `${formatDMY(tmpStart)} → ${formatDMY(tmpEnd)}` : (tmpStart ? `${formatDMY(tmpStart)} → …` : (tmpEnd ? `… → ${formatDMY(tmpEnd)}` : "Select date range"));
+  const appliedLabel = start && end ? `${formatDMY(start)} → ${formatDMY(end)}` : (start ? `${formatDMY(start)} → …` : (end ? `… → ${formatDMY(end)}` : ""));
 
   const apply = () => {
+    // tmpStart/tmpEnd are YMD; keep them as is for state
     let s = tmpStart || ""; let e = tmpEnd || "";
     if (s && e && s > e) { const t = s; s = e; e = t; }
     onChange?.({ start: s, end: e });
@@ -51,41 +54,67 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
             <div>End</div>
           </div>
           <div className="flex gap-3">
-            <DatePicker value={tmpStart} onChange={(e)=> setTmpStart(e.target.value)} inline max={tmpEnd || undefined} />
-            <DatePicker value={tmpEnd} onChange={(e)=> setTmpEnd(e.target.value)} inline min={tmpStart || undefined} />
+            <DatePicker
+              value={tmpStart}
+              onChange={(e)=> { setTmpStart(e.target.value); setTmpStartText(formatDMY(e.target.value)); }}
+              inline
+              max={tmpEnd || undefined}
+            />
+            <DatePicker
+              value={tmpEnd}
+              onChange={(e)=> { setTmpEnd(e.target.value); setTmpEndText(formatDMY(e.target.value)); }}
+              inline
+              min={tmpStart || undefined}
+            />
           </div>
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
-              value={tmpStart}
-              onChange={(e)=> setTmpStart(e.target.value)}
+              value={tmpStartText}
+              onChange={(e)=> {
+                const v = e.target.value;
+                setTmpStartText(v);
+                if (!v) { setTmpStart(""); return; }
+                const ymd = dmyToYMD(v);
+                if (ymd) setTmpStart(ymd);
+              }}
               onKeyDown={(e)=> { if (e.key === 'Enter') apply(); }}
-              placeholder="YYYY-MM-DD"
-              className={`rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200 ${tmpStart && !isValidYMD(tmpStart) ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}
+              placeholder="dd/MM/yyyy"
+              className={`rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200 ${tmpStartText && !isValidDMY(tmpStartText) ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}
             />
             <input
-              value={tmpEnd}
-              onChange={(e)=> setTmpEnd(e.target.value)}
+              value={tmpEndText}
+              onChange={(e)=> {
+                const v = e.target.value;
+                setTmpEndText(v);
+                if (!v) { setTmpEnd(""); return; }
+                const ymd = dmyToYMD(v);
+                if (ymd) setTmpEnd(ymd);
+              }}
               onKeyDown={(e)=> { if (e.key === 'Enter') apply(); }}
-              placeholder="YYYY-MM-DD"
-              className={`rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200 ${tmpEnd && !isValidYMD(tmpEnd) ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}
+              placeholder="dd/MM/yyyy"
+              className={`rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-teal-200 ${tmpEndText && !isValidDMY(tmpEndText) ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}
             />
           </div>
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <button type="button" className="rounded border border-gray-200 px-2 py-1 hover:bg-slate-50" onClick={()=> {
               const t = new Date(); const to = t; const from = new Date(t); from.setDate(t.getDate()-6);
               const fmt = (d)=> `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
-              setTmpStart(fmt(from)); setTmpEnd(fmt(to));
+              const s = fmt(from); const e = fmt(to);
+              setTmpStart(s); setTmpEnd(e);
+              setTmpStartText(formatDMY(s)); setTmpEndText(formatDMY(e));
             }}>Last 7 days</button>
             <button type="button" className="rounded border border-gray-200 px-2 py-1 hover:bg-slate-50" onClick={()=> {
               const t = new Date(); const to = t; const from = new Date(t); from.setDate(t.getDate()-29);
               const fmt = (d)=> `${d.getFullYear()}-${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')}`;
-              setTmpStart(fmt(from)); setTmpEnd(fmt(to));
+              const s = fmt(from); const e = fmt(to);
+              setTmpStart(s); setTmpEnd(e);
+              setTmpStartText(formatDMY(s)); setTmpEndText(formatDMY(e));
             }}>Last 30 days</button>
           </div>
           <div className="mt-3 flex items-center justify-between text-xs text-slate-600">
             <div className="flex gap-2">
-              <button type="button" className="rounded border border-teal-200 bg-teal-50 px-2 py-1 text-teal-800 hover:bg-teal-100" onClick={()=> { const t = new Date(); const y=t.getFullYear(); const m=t.getMonth()+1; const d=t.getDate(); const s=`${y}-${m<10?`0${m}`:m}-${d<10?`0${d}`:d}`; setTmpStart(s); setTmpEnd(s); }}>Today</button>
-              <button type="button" className="rounded border border-gray-200 px-2 py-1 hover:bg-slate-50" onClick={clear}>Clear</button>
+              <button type="button" className="rounded border border-teal-200 bg-teal-50 px-2 py-1 text-teal-800 hover:bg-teal-100" onClick={()=> { const t = new Date(); const y=t.getFullYear(); const m=t.getMonth()+1; const d=t.getDate(); const s=`${y}-${m<10?`0${m}`:m}-${d<10?`0${d}`:d}`; setTmpStart(s); setTmpEnd(s); setTmpStartText(formatDMY(s)); setTmpEndText(formatDMY(s)); }}>Today</button>
+              <button type="button" className="rounded border border-gray-200 px-2 py-1 hover:bg-slate-50" onClick={()=> { clear(); setTmpStartText(""); setTmpEndText(""); }}>Clear</button>
             </div>
             <div className="flex gap-2">
               <button type="button" className="rounded border border-gray-200 px-3 py-1 hover:bg-slate-50" onClick={()=> setOpen(false)}>Cancel</button>
