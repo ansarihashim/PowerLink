@@ -1,4 +1,6 @@
 import { motion } from "framer-motion";
+import Card from "../components/ui/Card.jsx";
+import Button from "../components/ui/Button.jsx";
 import { useMemo } from "react";
 import { workers } from "../data/workers.js";
 import { baana } from "../data/baana.js";
@@ -47,7 +49,7 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Welcome Banner */}
       <motion.div
-        className="rounded-xl bg-gradient-to-r from-indigo-500 via-blue-600 to-indigo-700 p-6 text-white shadow"
+        className="rounded-xl bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 p-6 text-white shadow"
         initial={{ opacity: 0, scale: 0.98 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
@@ -61,10 +63,10 @@ export default function Dashboard() {
         <h3 className="mb-3 text-sm font-medium text-gray-700">Key Statistics</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {[
-            { label: "Total Workers", value: totalWorkers.toLocaleString(), iconTint: "bg-emerald-100 text-emerald-700", card: "from-indigo-50 to-white" },
-            { label: "Total Remaining Loan", value: totalRemainingLoan.toLocaleString(), iconTint: "bg-amber-100 text-amber-700", card: "from-blue-50 to-white" },
-            { label: "Last Baana Date", value: lastBaanaDate, iconTint: "bg-indigo-100 text-indigo-700", card: "from-emerald-50 to-white" },
-            { label: "Last Beam Date", value: lastBeamDate, iconTint: "bg-sky-100 text-sky-700", card: "from-amber-50 to-white" },
+            { label: "Total Workers", value: totalWorkers.toLocaleString(), iconTint: "bg-teal-100 text-teal-700", card: "from-teal-50 to-white" },
+            { label: "Total Remaining Loan", value: totalRemainingLoan.toLocaleString(), iconTint: "bg-cyan-100 text-cyan-700", card: "from-cyan-50 to-white" },
+            { label: "Last Baana Date", value: lastBaanaDate, iconTint: "bg-teal-100 text-teal-700", card: "from-teal-50 to-white" },
+            { label: "Last Beam Date", value: lastBeamDate, iconTint: "bg-cyan-100 text-cyan-700", card: "from-cyan-50 to-white" },
           ].map((kpi, idx) => (
             <motion.div
               key={kpi.label}
@@ -91,64 +93,54 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Recent Notifications */}
         <motion.section
-          className="xl:col-span-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+          className="xl:col-span-2"
           variants={fadeIn}
           initial="hidden"
           animate="show"
         >
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold text-slate-800">Recent Notifications</h3>
-            <span className="text-xs rounded-full bg-emerald-100 px-2 py-0.5 text-emerald-700">5 New</span>
-          </div>
-          <div className="mt-4 space-y-3">
-            {recent.map((n, i) => (
-              <motion.div
-                key={`${n.text}-${n.date}-${i}`}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 * i }}
-                className="rounded-lg border border-emerald-100 bg-emerald-50 p-3 text-sm text-emerald-800"
-              >
-                <div className="flex items-center justify-between">
-                  <span>{n.text}</span>
-                  <span className="text-xs text-emerald-700/80">{n.date}</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-          <div className="mt-4">
-            <button onClick={() => navigate('/notifications')} className="rounded-lg bg-gradient-to-r from-indigo-500 to-blue-600 px-3 py-2 text-sm text-white shadow hover:shadow-md transition-all duration-300">View All Notifications</button>
-          </div>
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-slate-800">Recent Notifications</h3>
+              <span className="text-xs rounded-full bg-teal-100 px-2 py-0.5 text-teal-700">5 New</span>
+            </div>
+            <div className="mt-4 space-y-3">
+              {recent.map((n, i) => (
+                <motion.div
+                  key={`${n.text}-${n.date}-${i}`}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.05 * i }}
+                  className="rounded-lg border border-teal-100 bg-teal-50 p-3 text-sm text-teal-800"
+                >
+                  <div className="flex items-center justify-between">
+                    <span>{n.text}</span>
+                    <span className="text-xs text-teal-700/80">{n.date}</span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="mt-4">
+              <Button onClick={() => navigate('/notifications')}>View All Notifications</Button>
+            </div>
+          </Card>
         </motion.section>
 
         {/* Quick Actions */}
         <motion.aside
-          className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+          className=""
           variants={fadeIn}
           initial="hidden"
           animate="show"
         >
-          <h3 className="text-base font-semibold text-slate-800">Quick Actions</h3>
-          <div className="mt-4 space-y-3">
-            <button
-              onClick={() => navigate('/add-worker')}
-              className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
-            >
-              Add New Worker
-            </button>
-            <button
-              onClick={() => navigate('/add-loan')}
-              className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
-            >
-              Add New Loan
-            </button>
-            <button
-              onClick={() => navigate('/add-expense')}
-              className="w-full rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-left text-sm text-emerald-800 hover:bg-emerald-100 transition-all duration-300 hover:shadow-sm"
-            >
-              Add New Expense
-            </button>
-          </div>
+          <Card className="p-4">
+            <h3 className="text-base font-semibold text-slate-800">Quick Actions</h3>
+            <div className="mt-4 grid grid-cols-1 gap-2">
+              <Button className="w-full justify-start" onClick={() => navigate('/add-worker')}>Add New Worker</Button>
+              <Button className="w-full justify-start" onClick={() => navigate('/add-loan')}>Add New Loan</Button>
+              <Button className="w-full justify-start" onClick={() => navigate('/add-expense')}>Add New Expense</Button>
+              <Button className="w-full justify-start" onClick={() => navigate('/pay-installment')}>Pay Installment</Button>
+            </div>
+          </Card>
         </motion.aside>
       </div>
 
@@ -169,8 +161,8 @@ export default function Dashboard() {
           >
             <h4 className="font-semibold text-slate-800">{title}</h4>
             <div className="mt-3 space-y-2 text-sm text-slate-600">
-              <div className="rounded-md border border-indigo-100 bg-indigo-50 p-2">—</div>
-              <div className="rounded-md border border-indigo-100 bg-indigo-50 p-2">—</div>
+              <div className="rounded-md border border-teal-100 bg-teal-50 p-2">—</div>
+              <div className="rounded-md border border-teal-100 bg-teal-50 p-2">—</div>
             </div>
           </motion.section>
         ))}
@@ -191,7 +183,7 @@ export default function Dashboard() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: i * 0.07 }}
-              className="rounded-lg border border-indigo-100 bg-gradient-to-br from-white to-indigo-50 p-4 text-sm text-slate-600 h-40"
+              className="rounded-lg border border-teal-100 bg-gradient-to-br from-white to-teal-50 p-4 text-sm text-slate-600 h-40"
             >
               {title} (placeholder)
             </motion.div>

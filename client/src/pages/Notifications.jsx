@@ -5,6 +5,7 @@ import { installments } from "../data/installments.js";
 import { expenses } from "../data/expenses.js";
 import { baana } from "../data/baana.js";
 import { beam } from "../data/beam.js";
+import Card from "../components/ui/Card.jsx";
 
 export default function Notifications() {
   const [type, setType] = useState("all");
@@ -28,7 +29,10 @@ export default function Notifications() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-900">All Notifications</h2>
+        <div className="flex items-center gap-3">
+          <span className="h-6 w-1.5 rounded bg-teal-500" />
+          <h2 className="text-xl font-semibold text-slate-900">All Notifications</h2>
+        </div>
         <div className="flex items-center gap-2 text-sm">
           <label className="text-slate-600">Type</label>
           <select className="rounded-md border border-slate-200 px-2 py-1" value={type} onChange={(e)=>setType(e.target.value)}>
@@ -42,13 +46,13 @@ export default function Notifications() {
           </select>
         </div>
       </div>
-      <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <Card className="p-4">
         <ul className="divide-y divide-gray-100">
           {filtered.map((n, i) => (
             <li key={`${n.text}-${n.date}-${i}`} className="py-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
                   <span className="text-sm text-slate-800">{n.text}</span>
                 </div>
                 <span className="text-xs text-slate-500">{n.date}</span>
@@ -59,7 +63,7 @@ export default function Notifications() {
         {filtered.length === 0 && (
           <div className="text-sm text-slate-500">No notifications</div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

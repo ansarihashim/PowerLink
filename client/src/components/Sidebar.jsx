@@ -28,14 +28,19 @@ const navItems = [
   ) },
 ];
 
-export default function Sidebar({ open, onClose }) {
+export default function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
   return (
     <>
       {/* Desktop fixed sidebar */}
-      <aside className="hidden lg:block fixed inset-y-0 left-0 z-40 w-64 bg-gradient-to-b from-indigo-700 via-blue-700 to-indigo-800 text-white">
-        <div className="h-16 flex items-center gap-2 px-4 border-b border-white/10">
-          <div className="h-8 w-8 rounded-lg bg-white/20 grid place-items-center font-semibold">PL</div>
-          <div className="font-semibold tracking-wide">PowerLink</div>
+  <aside className={`hidden lg:block fixed inset-y-0 left-0 z-40 ${collapsed ? 'w-20' : 'w-64'} bg-gradient-to-b from-teal-500 via-cyan-600 to-teal-700 text-white transition-all duration-300`}>
+        <div className="h-16 flex items-center justify-between gap-2 px-4 border-b border-white/10">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-8 w-8 rounded-lg bg-white/20 grid place-items-center font-semibold">PL</div>
+            {!collapsed && <div className="font-semibold tracking-wide truncate">PowerLink</div>}
+          </div>
+          <button onClick={onToggleCollapse} className="hidden lg:inline-flex rounded-md p-2 hover:bg-white/10" aria-label="Collapse sidebar">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M8 6l-4 4 4 4M16 6l4 4-4 4" strokeWidth="1.5"/></svg>
+          </button>
         </div>
         <nav className="p-3 space-y-1">
           {navItems.map((item) => (
@@ -43,15 +48,15 @@ export default function Sidebar({ open, onClose }) {
               key={item.to}
               to={item.to}
               end={item.to === "/"}
-              className={({ isActive }) => `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-300 ${
+              className={({ isActive }) => `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                 isActive
-                  ? "bg-white/10 text-white shadow-inner border-l-4 border-amber-300"
+                  ? "bg-white/10 text-white shadow-inner border-l-4 border-teal-200"
                   : "text-white/80 hover:text-white hover:bg-white/5"
               }`}
               aria-label={item.label}
             >
               <span className="text-white/70">{item.icon}</span>
-              <span>{item.label}</span>
+              {!collapsed && <span className="truncate">{item.label}</span>}
             </NavLink>
           ))}
         </nav>
@@ -69,7 +74,7 @@ export default function Sidebar({ open, onClose }) {
               onClick={onClose}
             />
             <motion.aside
-              className="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-indigo-700 via-blue-700 to-indigo-800 text-white lg:hidden shadow-xl"
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-gradient-to-b from-teal-500 via-cyan-600 to-teal-700 text-white lg:hidden shadow-xl"
               initial={{ x: -320 }}
               animate={{ x: 0 }}
               exit={{ x: -320 }}
@@ -91,9 +96,9 @@ export default function Sidebar({ open, onClose }) {
                     to={item.to}
                     end={item.to === "/"}
                     onClick={onClose}
-                    className={({ isActive }) => `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-300 ${
+                    className={({ isActive }) => `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 ${
                       isActive
-                        ? "bg-white/10 text-white border-l-4 border-amber-300"
+                        ? "bg-white/10 text-white border-l-4 border-teal-200"
                         : "text-white/80 hover:text-white hover:bg-white/5"
                     }`}
                     aria-label={item.label}

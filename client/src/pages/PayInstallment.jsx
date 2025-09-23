@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { loans } from "../data/loans.js";
 
-export default function AddExpense() {
-  const [form, setForm] = useState({ category: "tea", amount: "", date: "" });
+export default function PayInstallment() {
+  const [form, setForm] = useState({ loanId: "", amount: "", date: "" });
   const [errors, setErrors] = useState({});
   const [added, setAdded] = useState([]);
   const [success, setSuccess] = useState("");
@@ -13,7 +14,7 @@ export default function AddExpense() {
 
   const validate = () => {
     const e = {};
-    if (!form.category) e.category = "Required";
+    if (!form.loanId) e.loanId = "Required";
     if (form.amount === "" || isNaN(Number(form.amount))) e.amount = "Required";
     if (!form.date) e.date = "Required";
     return e;
@@ -26,38 +27,36 @@ export default function AddExpense() {
     setErrors(eMap);
     if (Object.keys(eMap).length) return;
     const item = {
-      id: `E-${Math.floor(Math.random()*1000)}`,
-      category: form.category,
+      id: `I-${Math.floor(Math.random()*1000)}`,
+      loanId: form.loanId,
       amount: Number(form.amount),
       date: form.date,
     };
     setAdded((arr) => [item, ...arr]);
-    setSuccess("Expense added locally (not saved)");
-    setForm({ category: "tea", amount: "", date: "" });
+    setSuccess("Installment recorded locally (not saved)");
+    setForm({ loanId: "", amount: "", date: "" });
   };
 
   const onCancel = () => {
-    setForm({ category: "tea", amount: "", date: "" });
+    setForm({ loanId: "", amount: "", date: "" });
     setErrors({});
     setSuccess("");
   };
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-slate-900">Add Expense</h2>
+      <h2 className="text-xl font-semibold text-slate-900">Pay Installment</h2>
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
   {success && <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800">{success}</div>}
         <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div>
-            <select name="category" value={form.category} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm ${errors.category ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
-              <option value="tea">tea</option>
-              <option value="workshop">workshop</option>
-              <option value="mistary">mistary</option>
-              <option value="mukadam">mukadam</option>
-              <option value="maintenance">maintenance</option>
-              <option value="other">other</option>
+            <select name="loanId" value={form.loanId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm ${errors.loanId ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`}>
+              <option value="">Select Loan</option>
+              {loans.map((l) => (
+                <option key={l.id} value={l.id}>{l.id} — {l.workerId}</option>
+              ))}
             </select>
-            {errors.category && <div className="mt-1 text-xs text-amber-600">{errors.category}</div>}
+            {errors.loanId && <div className="mt-1 text-xs text-amber-600">{errors.loanId}</div>}
           </div>
           <div>
             <input name="amount" value={form.amount} onChange={onChange} type="number" min={0} placeholder="Amount" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.amount ? 'border-amber-400 bg-amber-50' : 'border-gray-200'}`} />
@@ -76,12 +75,12 @@ export default function AddExpense() {
 
       {added.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-slate-800 mb-2">Locally Added Expenses</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-2">Locally Recorded Installments</h3>
           <ul className="text-sm text-slate-700 space-y-1">
-            {added.map((e) => (
-              <li key={e.id} className="flex items-center justify-between">
-                <span>{e.id} — {e.category}</span>
-                <span className="text-slate-500">Amount: {e.amount.toLocaleString()}</span>
+            {added.map((i) => (
+              <li key={i.id} className="flex items-center justify-between">
+                <span>{i.id} — {i.loanId}</span>
+                <span className="text-slate-500">Amount: {i.amount.toLocaleString()}</span>
               </li>
             ))}
           </ul>

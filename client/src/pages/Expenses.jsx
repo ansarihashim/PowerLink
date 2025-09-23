@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { expenses as seed } from "../data/expenses.js";
+import Card from "../components/ui/Card.jsx";
+import Button from "../components/ui/Button.jsx";
 
 export default function Expenses() {
   const [sortKey, setSortKey] = useState("date");
@@ -41,11 +43,14 @@ export default function Expenses() {
 
   return (
     <div className="space-y-4">
-  <h2 className="text-xl font-semibold text-slate-900">Expenses</h2>
+      <div className="flex items-center gap-3">
+  <span className="h-6 w-1.5 rounded bg-teal-500" />
+        <h2 className="text-xl font-semibold text-slate-900">Expenses</h2>
+      </div>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           {/* Filters */}
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+          <Card className="p-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
               <input value={from} onChange={(e)=>setFrom(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
               <input value={to} onChange={(e)=>setTo(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
@@ -66,15 +71,15 @@ export default function Expenses() {
                 <option value="amount">Amount</option>
                 <option value="category">Category</option>
               </select>
-              <button className="rounded-md border border-slate-200 px-2 py-1 hover:bg-slate-50 transition" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
+              <Button variant="outline" className="px-2 py-1" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
                 {sortDir === 'asc' ? 'Asc' : 'Desc'}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+          <Card className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 text-sm">
-              <thead className="bg-gradient-to-r from-indigo-500 via-blue-600 to-indigo-700 text-white">
+              <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
                 <tr className="text-white">
                   {['Category','Amount','Date'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
@@ -83,7 +88,7 @@ export default function Expenses() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {rows.map((e, idx) => (
-                  <tr key={e.id} className={`transition-colors hover:bg-amber-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                  <tr key={e.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                     <td className="px-4 py-3">{e.category}</td>
                     <td className="px-4 py-3">{e.amount.toLocaleString()}</td>
                     <td className="px-4 py-3">{e.date}</td>
@@ -91,20 +96,22 @@ export default function Expenses() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
           <div className="flex items-center justify-between text-sm text-slate-600">
             <span>Page {page} of {totalPages}</span>
             <div className="flex gap-2">
-              <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="rounded-md bg-emerald-600 text-white px-3 py-1 hover:bg-emerald-700 disabled:opacity-50 transition-all duration-200">Prev</button>
-              <button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="rounded-md bg-emerald-600 text-white px-3 py-1 hover:bg-emerald-700 disabled:opacity-50 transition-all duration-200">Next</button>
+              <Button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 disabled:opacity-50">Prev</Button>
+              <Button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 disabled:opacity-50">Next</Button>
             </div>
           </div>
         </div>
-        <aside className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
-          <h3 className="text-base font-semibold text-emerald-800">Summary</h3>
-          <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-100 p-4 text-sm text-emerald-800">
+        <aside>
+          <Card className="border-teal-200 bg-teal-50">
+          <h3 className="text-base font-semibold text-teal-800">Summary</h3>
+          <div className="mt-3 rounded-lg border border-teal-200 bg-teal-100 p-4 text-sm text-teal-800">
             Total Expenses (all): <span className="font-semibold">{total.toLocaleString()}</span>
           </div>
+          </Card>
         </aside>
       </div>
     </div>
