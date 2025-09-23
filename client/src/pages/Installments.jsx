@@ -1,12 +1,59 @@
+import { useEffect, useMemo, useState } from "react";
+import { installments as seed } from "../data/installments.js";
+
 export default function Installments() {
+  const [sortKey, setSortKey] = useState("date");
+  const [sortDir, setSortDir] = useState("desc");
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [filtered, setFiltered] = useState(seed);
+
+  useEffect(() => {
+    const fromD = from ? new Date(from) : null;
+    const toD = to ? new Date(to) : null;
+    const rows = seed.filter((i) => {
+      const d = new Date(i.date);
+      const fromOk = fromD ? d >= fromD : true;
+      const toOk = toD ? d <= toD : true;
+      return fromOk && toOk;
+    });
+    setFiltered(rows);
+    setPage(1);
+  }, [from, to]);
+
+  const { rows, totalPages } = useMemo(() => {
+    const sorted = [...filtered].sort((a, b) => {
+      const A = a[sortKey];
+      const B = b[sortKey];
+      if (A < B) return sortDir === "asc" ? -1 : 1;
+      if (A > B) return sortDir === "asc" ? 1 : -1;
+      return 0;
+    });
+    const start = (page - 1) * pageSize;
+    return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
+  }, [filtered, sortKey, sortDir, page]);
+
   return (
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-900">Installments</h2>
       <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-          <input type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
-          <input type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
-          <input className="rounded-md border border-gray-200 px-3 py-2 text-sm" placeholder="Min amount" />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-2">
+          <input value={from} onChange={(e)=>setFrom(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
+          <input value={to} onChange={(e)=>setTo(e.target.value)} type="date" className="rounded-md border border-gray-200 px-3 py-2 text-sm" />
+        </div>
+        <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
+          <span>Sort by:</span>
+          <select className="rounded-md border border-gray-200 px-2 py-1" value={sortKey} onChange={(e)=>setSortKey(e.target.value)}>
+            <option value="date">Date</option>
+            <option value="amount">Amount</option>
+            <option value="loanId">Loan ID</option>
+            <option value="worker">Worker</option>
+          </select>
+          <button className="rounded-md border border-gray-200 px-2 py-1 hover:bg-gray-50" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
+            {sortDir === 'asc' ? 'Asc' : 'Desc'}
+          </button>
         </div>
       </div>
       <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -19,14 +66,23 @@ export default function Installments() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3">—</td>
-              <td className="px-4 py-3">—</td>
-              <td className="px-4 py-3">—</td>
-              <td className="px-4 py-3">—</td>
-            </tr>
+            {rows.map((i) => (
+              <tr key={i.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3">{i.loanId}</td>
+                <td className="px-4 py-3">{i.worker}</td>
+                <td className="px-4 py-3">{i.amount.toLocaleString()}</td>
+                <td className="px-4 py-3">{i.date}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
+      </div>
+      <div className="flex items-center justify-between text-sm text-gray-600">
+        <span>Page {page} of {totalPages}</span>
+        <div className="flex gap-2">
+          <button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="rounded-md border border-gray-200 px-3 py-1 hover:bg-gray-50 disabled:opacity-50">Prev</button>
+          <button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="rounded-md border border-gray-200 px-3 py-1 hover:bg-gray-50 disabled:opacity-50">Next</button>
+        </div>
       </div>
     </div>
   );
