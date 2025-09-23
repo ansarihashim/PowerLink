@@ -57,10 +57,10 @@ export default function App() {
           onMenuClick={() => setSidebarOpen((v) => !v)}
           offsetClass={"lg:left-[var(--pl-offset)]"}
         />
-  <main className={`relative pt-24 lg:pl-[var(--pl-offset)] px-4 sm:px-6 md:px-8 pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
+  <main className={`relative pt-24 lg:pl-[var(--pl-offset)] pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
     {/* Top fade and clip to prevent content showing in navbar gap */}
     <div className="pointer-events-none absolute -top-8 left-0 right-0 h-12 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent" />
-          <div className="max-w-7xl mx-auto">
+          <div className="max-w-7xl mx-auto px-6">
             <AnimatedRoutes />
           </div>
         </main>
