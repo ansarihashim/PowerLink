@@ -35,7 +35,7 @@ export default function Notifications() {
         </div>
         <div className="flex items-center gap-2 text-sm">
           <label className="text-slate-600">Type</label>
-          <select className="rounded-md border border-slate-200 px-2 py-1" value={type} onChange={(e)=>setType(e.target.value)}>
+          <select className="rounded-md border border-slate-200 px-2 py-1 hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" value={type} onChange={(e)=>setType(e.target.value)}>
             <option value="all">All</option>
             <option value="worker">Workers</option>
             <option value="loan">Loans</option>

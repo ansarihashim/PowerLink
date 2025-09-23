@@ -50,7 +50,7 @@ export default function PayInstallment() {
   {success && <div className="mb-4 rounded-md border border-teal-200 bg-teal-50 px-3 py-2 text-sm text-teal-800">{success}</div>}
         <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <div>
-            <select name="loanId" value={form.loanId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm ${errors.loanId ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}>
+            <select name="loanId" value={form.loanId} onChange={onChange} className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.loanId ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}>
               <option value="">Select Loan</option>
               {loans.map((l) => (
                 <option key={l.id} value={l.id}>{l.id} — {l.workerId}</option>
@@ -59,11 +59,11 @@ export default function PayInstallment() {
             {errors.loanId && <div className="mt-1 text-xs text-rose-600">{errors.loanId}</div>}
           </div>
           <div>
-            <input name="amount" value={form.amount} onChange={onChange} type="number" min={0} placeholder="Amount" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.amount ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+            <input name="amount" value={form.amount} onChange={onChange} type="number" min={0} placeholder="Amount" className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.amount ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
             {errors.amount && <div className="mt-1 text-xs text-rose-600">{errors.amount}</div>}
           </div>
           <div>
-            <input name="date" value={form.date} onChange={onChange} type="date" className={`w-full rounded-md border px-3 py-2 text-sm ${errors.date ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+            <input name="date" value={form.date} onChange={onChange} type="date" className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.date ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
             {errors.date && <div className="mt-1 text-xs text-rose-600">{errors.date}</div>}
           </div>
           <div className="sm:col-span-2 flex gap-2">

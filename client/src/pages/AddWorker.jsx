@@ -46,7 +46,7 @@ export default function AddWorker() {
 
   const field = (name, placeholder, props = {}) => (
     <div>
-      <input name={name} value={form[name]} onChange={onChange} placeholder={placeholder} {...props} className={`w-full rounded-md border px-3 py-2 text-sm ${errors[name] ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+      <input name={name} value={form[name]} onChange={onChange} placeholder={placeholder} {...props} className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors[name] ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
       {errors[name] && <div className="mt-1 text-xs text-rose-600">{errors[name]}</div>}
     </div>
   );
