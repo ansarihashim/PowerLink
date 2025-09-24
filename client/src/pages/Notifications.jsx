@@ -1,10 +1,5 @@
-import { useMemo, useState } from "react";
-import { workers } from "../data/workers.js";
-import { loans } from "../data/loans.js";
-import { installments } from "../data/installments.js";
-import { expenses } from "../data/expenses.js";
-import { baana } from "../data/baana.js";
-import { beam } from "../data/beam.js";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "../api/http.js";
 import Card from "../components/ui/Card.jsx";
 import { formatDMY } from "../utils/date.js";
 import SortSelect from "../components/ui/SortSelect.jsx";
@@ -12,21 +7,39 @@ import SortSelect from "../components/ui/SortSelect.jsx";
 export default function Notifications() {
   const [type, setType] = useState("all");
 
-  const updates = useMemo(() => {
-    const items = [
-      ...workers.map((w) => ({ date: w.joiningDate, text: `Worker joined: ${w.name}`, type: "worker" })),
-      ...loans.map((l) => ({ date: l.loanDate, text: `Loan taken: ${l.workerId} - ${l.amount.toLocaleString()}`, type: "loan" })),
-      ...installments.map((i) => ({ date: i.date, text: `Installment paid: ${i.worker} - ${i.amount.toLocaleString()}`, type: "installment" })),
-      ...expenses.map((e) => ({ date: e.date, text: `Expense added: ${e.category} - ${e.amount.toLocaleString()}`, type: "expense" })),
-      ...baana.map((b) => ({ date: b.date, text: `Baana arrival: ${b.sacks} sacks`, type: "baana" })),
-      ...beam.map((b) => ({ date: b.date, text: `Beam arrival: ${b.bunches} bunches`, type: "beam" })),
-    ].sort((a, b) => new Date(b.date) - new Date(a.date));
-    return items;
+  const [updates, setUpdates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(()=> {
+    let alive = true;
+    setLoading(true); setError("");
+    Promise.all([
+      api.workers.list({ page:1, pageSize:50 }),
+      api.loans.list({ page:1, pageSize:50 }),
+      api.installments.list({ page:1, pageSize:50 }),
+      api.expenses.list({ page:1, pageSize:50 }),
+      api.baana.list({ page:1, pageSize:50 }),
+      api.beam.list({ page:1, pageSize:50 })
+    ])
+      .then(([w,l,i,e,ba,be]) => {
+        if(!alive) return;
+        const items = [];
+        (w.data||[]).forEach(x=> items.push({ date:x.joiningDate, text:`Worker joined: ${x.name}`, type:'worker' }));
+        (l.data||[]).forEach(x=> items.push({ date:x.loanDate, text:`Loan issued: ${Number(x.amount).toLocaleString()}`, type:'loan' }));
+        (i.data||[]).forEach(x=> items.push({ date:x.date, text:`Installment: ${Number(x.amount).toLocaleString()}`, type:'installment' }));
+        (e.data||[]).forEach(x=> items.push({ date:x.date, text:`Expense: ${Number(x.amount).toLocaleString()}`, type:'expense' }));
+        (ba.data||[]).forEach(x=> items.push({ date:x.date, text:`Baana arrival: ${x.sacks} sacks`, type:'baana' }));
+        (be.data||[]).forEach(x=> items.push({ date:x.date, text:`Beam arrival: ${x.bunches} bunches`, type:'beam' }));
+        items.sort((a,b)=> new Date(b.date) - new Date(a.date));
+        setUpdates(items);
+      })
+      .catch(err=> { if(alive) setError(err.message || 'Failed to load'); })
+      .finally(()=> { if(alive) setLoading(false); });
+    return ()=> { alive=false; };
   }, []);
 
-  const filtered = useMemo(() => {
-    return type === "all" ? updates : updates.filter((u) => u.type === type);
-  }, [type, updates]);
+  const filtered = useMemo(() => type === 'all' ? updates : updates.filter(u=>u.type===type), [type, updates]);
 
   return (
     <div className="space-y-4">
@@ -54,20 +67,24 @@ export default function Notifications() {
         </div>
       </div>
       <Card className="p-4">
-        <ul className="divide-y divide-gray-100">
-          {filtered.map((n, i) => (
-            <li key={`${n.text}-${n.date}-${i}`} className="py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
-                  <span className="text-sm text-slate-800">{n.text}</span>
+        {loading && <div className="py-6 text-center text-sm text-slate-500">Loading...</div>}
+        {error && !loading && <div className="py-6 text-center text-sm text-rose-600">{error}</div>}
+        {!loading && !error && (
+          <ul className="divide-y divide-gray-100">
+            {filtered.map((n, i) => (
+              <li key={`${n.text}-${n.date}-${i}`} className="py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full bg-teal-500" />
+                    <span className="text-sm text-slate-800">{n.text}</span>
+                  </div>
+                  <span className="text-xs text-slate-500">{formatDMY(n.date)}</span>
                 </div>
-                <span className="text-xs text-slate-500">{formatDMY(n.date)}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-        {filtered.length === 0 && (
+              </li>
+            ))}
+          </ul>
+        )}
+        {!loading && !error && filtered.length === 0 && (
           <div className="text-sm text-slate-500">No notifications</div>
         )}
       </Card>

@@ -15,35 +15,50 @@ const fadeIn = {
 export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [from, setFrom] = useState(""); // yyyy-MM-dd
-  const [to, setTo] = useState("");
+  // Removed date range filtering per request
 
-  const rangeCaption = useMemo(() => {
-    if (!from && !to) return "All time";
-    const left = from ? formatDMY(from) : "Start";
-    const right = to ? formatDMY(to) : "Today";
-    return `${left} → ${right}`;
-  }, [from, to]);
+  const rangeCaption = ""; // no caption now
 
   // (Comparison range removed for now; can be reintroduced later)
 
   const [stats, setStats] = useState({ workers:0, loansIssued:0, installmentsReceived:0, expenses:0 });
-  const [recent, setRecent] = useState([]);
+  const [recent, setRecent] = useState([]); // {date,label}
   const [loadingStats, setLoadingStats] = useState(false);
   const [statsError, setStatsError] = useState("");
 
   useEffect(()=> {
     let alive = true;
     setLoadingStats(true); setStatsError("");
-    api.stats.summary({ from, to })
+    api.stats.summary({})
       .then(data => { if (alive) setStats(data); })
       .catch(err => { if (alive) setStatsError(err.message || 'Failed loading stats'); })
       .finally(()=> { if (alive) setLoadingStats(false); });
+
+    // Fetch recent events by querying lightweight lists (limit 5 each then merge)
+    Promise.all([
+      api.workers.list({ page:1, pageSize:5 }),
+      api.loans.list({ page:1, pageSize:5 }),
+      api.installments.list({ page:1, pageSize:5 }),
+      api.expenses.list({ page:1, pageSize:5 }),
+      api.baana.list({ page:1, pageSize:5 }),
+      api.beam.list({ page:1, pageSize:5 })
+    ]).then(([w,l,i,e,ba,be]) => {
+      if(!alive) return;
+      const collect = [];
+      (w.data||[]).forEach(x=> collect.push({ date:x.joiningDate, text:`Worker joined: ${x.name}` }));
+      (l.data||[]).forEach(x=> collect.push({ date:x.loanDate, text:`Loan issued: ${Number(x.amount).toLocaleString()}` }));
+      (i.data||[]).forEach(x=> collect.push({ date:x.date, text:`Installment: ${Number(x.amount).toLocaleString()}` }));
+      (e.data||[]).forEach(x=> collect.push({ date:x.date, text:`Expense: ${Number(x.amount).toLocaleString()}` }));
+      (ba.data||[]).forEach(x=> collect.push({ date:x.date, text:`Baana arrival: ${x.sacks} sacks` }));
+      (be.data||[]).forEach(x=> collect.push({ date:x.date, text:`Beam arrival: ${x.bunches} bunches` }));
+      collect.sort((a,b)=> new Date(b.date) - new Date(a.date));
+      setRecent(collect.slice(0,5));
+    }).catch(()=>{});
     return ()=> { alive=false; };
-  }, [from,to]);
+  }, []);
 
   const kpis = [
-    { key: 'workers', label: 'New Workers', value: stats.workers, route: '/workers' },
+  { key: 'workers', label: 'All Workers', value: stats.workers, route: '/workers' },
     { key: 'loans', label: 'Loans Issued', value: stats.loansIssued, route: '/loans', isCurrency: true },
     { key: 'installments', label: 'Installments Received', value: stats.installmentsReceived, route: '/installments', isCurrency: true },
     { key: 'expenses', label: 'Expenses', value: stats.expenses, route: '/expenses', isCurrency: true },
@@ -62,9 +77,6 @@ export default function Dashboard() {
         <div className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(120px_60px_at_20%_0%,rgba(255,255,255,0.35),rgba(255,255,255,0)_60%),radial-gradient(160px_80px_at_70%_0%,rgba(255,255,255,0.25),rgba(255,255,255,0)_60%)]" />
   <h2 className="text-2xl font-semibold tracking-tight">Welcome back, {user?.name || 'there'}!</h2>
         <p className="text-white/90">Here’s a snapshot of your powerloom network.</p>
-        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="text-xs text-white/90">Filtered by: <span className="font-medium">{rangeCaption}</span></div>
-        </div>
       </motion.div>
 
       {/* KPI Cards */}
