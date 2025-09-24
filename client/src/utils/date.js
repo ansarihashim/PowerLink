@@ -6,7 +6,10 @@ export function toYMD(d) {
 
 export function fromYMD(s) {
   if (!s) return null;
-  const [y, m, dd] = (s || "").split("-").map(Number);
+  // Accept full ISO strings like 2025-09-24T12:34:56.000Z or plain yyyy-mm-dd
+  const core = s.slice(0,10); // first 10 chars are yyyy-mm-dd in ISO format
+  const [yStr, mStr, dStr] = core.split('-');
+  const y = Number(yStr), m = Number(mStr), dd = Number(dStr);
   if (!y || !m || !dd) return null;
   return new Date(y, m - 1, dd);
 }
