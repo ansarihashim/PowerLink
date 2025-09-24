@@ -4,6 +4,8 @@ export default function SortSelect({ value, onChange, options, className = "" })
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const [highlight, setHighlight] = useState(0);
+  const [menuWidth, setMenuWidth] = useState(null);
+  const measurerRef = useRef(null);
 
   useEffect(() => {
     const onDown = (e) => {
@@ -52,12 +54,38 @@ export default function SortSelect({ value, onChange, options, className = "" })
     setHighlight(idx);
   }, [open, value, options]);
 
+  // Measure widest option label to set dynamic width (avoid horizontal scrollbar)
+  useEffect(() => {
+    if (!options || !options.length) return;
+    // Create hidden span elements for measurement
+    if (!measurerRef.current) {
+      measurerRef.current = document.createElement('div');
+      measurerRef.current.style.position = 'absolute';
+      measurerRef.current.style.visibility = 'hidden';
+      measurerRef.current.style.whiteSpace = 'nowrap';
+      measurerRef.current.style.fontSize = '14px';
+      measurerRef.current.style.fontFamily = 'inherit';
+      document.body.appendChild(measurerRef.current);
+    }
+    let max = 0;
+    options.forEach(o => {
+      measurerRef.current.textContent = o.label || o.value || '';
+      const w = measurerRef.current.getBoundingClientRect().width;
+      if (w > max) max = w;
+    });
+    // Add padding + icon space (approx 48px)
+    const finalWidth = Math.ceil(max + 48);
+    setMenuWidth(finalWidth);
+  }, [options]);
+
+  const dynamicStyle = menuWidth ? { width: menuWidth } : {};
+
   return (
-    <div ref={ref} className="relative inline-block text-left">
+    <div ref={ref} className="relative inline-block text-left" style={dynamicStyle}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className={`rounded-md border border-gray-200 px-2 py-1 text-sm bg-white hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 transition-all duration-200 inline-flex items-center gap-1 ${className}`}
+        className={`w-full rounded-md border border-gray-200 px-2 py-1 text-sm bg-white hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 transition-all duration-200 inline-flex items-center justify-between gap-1 ${className}`}
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -65,7 +93,7 @@ export default function SortSelect({ value, onChange, options, className = "" })
         <svg className="h-4 w-4 text-slate-500" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd"/></svg>
       </button>
       {open && (
-        <div className="absolute left-0 mt-1 w-40 z-50 rounded-lg border border-teal-100 bg-white shadow-lg shadow-teal-200/40">
+        <div className="absolute left-0 mt-1 z-50 rounded-lg border border-teal-100 bg-white shadow-lg shadow-teal-200/40" style={dynamicStyle}>
           <ul role="listbox" className="py-1 max-h-60 overflow-auto">
             {options.map((opt, idx) => {
               const active = opt.value === value;

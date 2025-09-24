@@ -15,7 +15,7 @@ export default function PayInstallment() {
 
   useEffect(() => {
     api.loans.list({ page:1, pageSize:100 })
-      .then(r => setLoans((r.data||[]).map(l => ({ id: l._id, workerId: l.workerId }))))
+      .then(r => setLoans((r.data||[]).map(l => ({ id: l._id, amount: l.amount, remaining: l.remaining, workerName: l.workerName }))) )
       .catch(()=>{});
   }, []);
 
@@ -64,9 +64,9 @@ export default function PayInstallment() {
               onChange={(e)=> setForm(f=> ({...f, loanId: e.target.value}))}
               options={[
                 { value: "", label: "Select Loan" },
-                ...loans.map((l)=> ({ value: l.id, label: `${l.id} — ${l.workerId}` }))
+                ...loans.map((l)=> ({ value: l.id, label: `${l.workerName || 'Unknown'} — ${Number(l.amount||0).toLocaleString()} — ${l.id}` }))
               ]}
-              className="px-3 py-2"
+              className="px-3 py-2 w-80 min-w-[20rem]"
             />
             {errors.loanId && <div className="mt-1 text-xs text-rose-600">{errors.loanId}</div>}
           </div>
