@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api/http.js";
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
@@ -89,7 +89,8 @@ export default function Beam() {
           <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Record</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+  <div className="relative">
+  <table className="min-w-full divide-y divide-gray-200 text-sm transition-opacity duration-200" style={{ opacity: loading && rows.length ? 0.55 : 1 }}>
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
               {['Date','Number of Bunches','Actions'].map(h => (
@@ -98,10 +99,10 @@ export default function Beam() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {loading && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
-            {error && !loading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>}
+            {loading && rows.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && rows.length === 0 && !loading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>}
             {!loading && !error && rows.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No beam records</td></tr>}
-            {!loading && !error && rows.map((b, idx) => (
+            {rows.map((b, idx) => (
               <tr key={b.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                 <td className="px-4 py-3">{b.date ? formatDMY(b.date) : ''}</td>
                 <td className="px-4 py-3">{b.bunches}</td>
@@ -115,6 +116,12 @@ export default function Beam() {
             ))}
           </tbody>
         </table>
+        {loading && rows.length > 0 && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+          </div>
+        )}
+        </div>
       </Card>
       <div className="flex items-center justify-between text-sm text-slate-600">
         <span>Page {page} of {totalPages}</span>

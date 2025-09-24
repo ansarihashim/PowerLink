@@ -13,6 +13,7 @@ import Modal from "../components/ui/Modal.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 import Select from "../components/ui/Select.jsx";
+import Spinner from "../components/ui/Spinner.jsx";
 
 export default function Loans() {
   const [searchParams] = useSearchParams();
@@ -25,8 +26,10 @@ export default function Loans() {
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
   const queryClient = useQueryClient();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['loans', { page, pageSize, from, to, sortKey, sortDir }],
+    keepPreviousData: true,
+    refetchOnWindowFocus: false,
     queryFn: () => api.loans.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
   });
   const rows = (data?.data || []).map(l => ({ ...l, id: l._id }));
@@ -190,7 +193,8 @@ export default function Loans() {
           <Button onClick={openCreate} className="bg-teal-600 text-white hover:bg-teal-700">Add Loan</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
-  <table className="min-w-full divide-y divide-gray-200 text-sm">
+  <div className="relative">
+  <table className="min-w-full divide-y divide-gray-200 text-sm transition-opacity duration-200" style={{ opacity: isFetching && rows.length ? 0.55 : 1 }}>
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
               <th className="px-4 py-3 text-left font-medium">Worker</th>
@@ -199,14 +203,20 @@ export default function Loans() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
-            {error && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+            {isLoading && groupedList.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && groupedList.length === 0 && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
             {!isLoading && !error && groupedList.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No loans</td></tr>}
-            {!isLoading && !error && groupedList.map((g, idx) => (
+            {groupedList.map((g, idx) => (
               <GroupedLoanRow key={g.workerId || idx} group={g} idx={idx} onEdit={openEdit} onDelete={setDeleteId} />
             ))}
           </tbody>
         </table>
+        {isFetching && groupedList.length > 0 && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <Spinner size={28} />
+          </div>
+        )}
+  </div>
       </Card>
       <div className="flex items-center justify-between text-sm text-slate-600">
         <span>Page {page} of {totalPages}</span>

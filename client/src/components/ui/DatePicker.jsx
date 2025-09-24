@@ -11,17 +11,17 @@ function fromYMD(s) {
 }
 
 function toDMY(d) { return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; }
-export default function DatePicker({ value, onChange, min, max, placeholder = "Select date", className = "", inline = false }) {
+export default function DatePicker({ value, onChange, min, max, placeholder = "Select date", className = "", inline = false, fallbackViewDate }) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState(() => fromYMD(value) || new Date());
   const [focusDate, setFocusDate] = useState(() => fromYMD(value) || new Date());
   const ref = useRef(null);
 
   useEffect(() => {
-    const d = fromYMD(value) || new Date();
+    const d = fromYMD(value) || fromYMD(fallbackViewDate) || new Date();
     setView(d);
     setFocusDate(d);
-  }, [value]);
+  }, [value, fallbackViewDate]);
 
   useEffect(() => {
     if (inline) return; // inline mode manages visibility at parent level

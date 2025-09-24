@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -38,6 +38,7 @@ export default function Workers() {
   const [deleteId, setDeleteId] = useState(null);
   const { push } = useToast();
 
+  const prevDataRef = useRef([]);
   useEffect(() => {
     let alive = true;
     setLoading(true); setError("");
@@ -46,12 +47,14 @@ export default function Workers() {
       .then(r => {
         if (!alive) return;
         const data = r.data || [];
-        setRows(data.map(w => ({
+        const mapped = data.map(w => ({
           ...w,
-          id: w._id,
-          totalLoan: w.totalLoan ?? 0,
-          remainingLoan: w.remainingLoan ?? 0,
-        })));
+            id: w._id,
+            totalLoan: w.totalLoan ?? 0,
+            remainingLoan: w.remainingLoan ?? 0,
+        }));
+        prevDataRef.current = mapped; // store last successful
+        setRows(mapped);
         const total = r.meta?.total || data.length;
         setTotalPages(Math.max(1, Math.ceil(total / pageSize)));
       })
@@ -172,7 +175,8 @@ export default function Workers() {
           <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Worker</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+  <div className="relative">
+  <table className="min-w-full divide-y divide-gray-200 text-sm transition-opacity duration-200" style={{ opacity: loading && rows.length ? 0.55 : 1 }}>
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
               {['ID','Name','Phone Number','Address','Joining Date','Loan Taken','Remaining Loan Amount','Actions'].map(h=> (
@@ -181,16 +185,16 @@ export default function Workers() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {loading && (
+            {loading && rows.length === 0 && (
               <tr><td colSpan={8} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>
             )}
-            {error && !loading && (
+            {error && rows.length === 0 && !loading && (
               <tr><td colSpan={8} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>
             )}
             {!loading && !error && rows.length === 0 && (
               <tr><td colSpan={8} className="px-4 py-6 text-center text-slate-500">No workers found</td></tr>
             )}
-            {!loading && !error && rows.map((w, idx) => (
+            {rows.map((w, idx) => (
               <tr
                 key={w.id}
                 onClick={(e)=> { if(e.target.tagName !== 'BUTTON') navigate(`/workers/${w.id}`); }}
@@ -213,6 +217,12 @@ export default function Workers() {
             ))}
           </tbody>
         </table>
+        {loading && rows.length > 0 && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
+          </div>
+        )}
+        </div>
       </Card>
       {/* Pagination placeholder */}
       <div className="flex items-center justify-between text-sm text-slate-600">

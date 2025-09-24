@@ -13,6 +13,7 @@ import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { downloadCSV } from "../utils/export.js";
 import Select from "../components/ui/Select.jsx";
+import Spinner from "../components/ui/Spinner.jsx";
 
 export default function Installments() {
   const [searchParams] = useSearchParams();
@@ -25,8 +26,10 @@ export default function Installments() {
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
   const queryClient = useQueryClient();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['installments', { page, pageSize, from, to, sortKey, sortDir }],
+    keepPreviousData: true,
+    refetchOnWindowFocus: false,
     queryFn: () => api.installments.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
   });
   const rows = (data?.data || []).map(i => ({ ...i, id: i._id }));
@@ -128,7 +131,8 @@ export default function Installments() {
           <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Installment</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
+  <div className="relative">
+  <table className="min-w-full divide-y divide-gray-200 text-sm transition-opacity duration-200" style={{ opacity: isFetching && rows.length ? 0.55 : 1 }}>
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
               {['Loan','Worker','Amount','Date Paid','Actions'].map(h => (
@@ -137,14 +141,20 @@ export default function Installments() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
-            {error && !isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
-            {!isLoading && !error && rows.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">No installments</td></tr>}
-            {!isLoading && !error && rows.map((i, idx) => (
+            {isLoading && rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && rows.length === 0 && !isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+            {!isLoading && !error && rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">No installments</td></tr>}
+            {rows.map((i, idx) => (
               <InstallmentRow key={i.id} inst={i} idx={idx} onEdit={openEdit} onDelete={startDelete} />
             ))}
           </tbody>
         </table>
+        {isFetching && rows.length > 0 && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <Spinner size={28} />
+          </div>
+        )}
+        </div>
       </Card>
       <div className="flex items-center justify-between text-sm text-slate-600">
         <span>Page {page} of {totalPages}</span>

@@ -12,6 +12,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Modal from "../components/ui/Modal.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
+import Select from "../components/ui/Select.jsx";
+import Spinner from "../components/ui/Spinner.jsx";
 
 export default function Expenses() {
   const [searchParams] = useSearchParams();
@@ -25,8 +27,10 @@ export default function Expenses() {
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
   const queryClient = useQueryClient();
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, error } = useQuery({
     queryKey: ['expenses', { page, pageSize, from, to, sortKey, sortDir, category }],
+    keepPreviousData: true,
+    refetchOnWindowFocus: false,
     queryFn: () => {
       const params = { page, pageSize, from, to, sortBy: sortKey, sortDir };
       if (category !== 'all') params.category = category;
@@ -154,7 +158,8 @@ export default function Expenses() {
               <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Expense</Button>
               <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
             </div>
-            <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <div className="relative">
+            <table className="min-w-full divide-y divide-gray-200 text-sm transition-opacity duration-200" style={{ opacity: isFetching && rows.length ? 0.55 : 1 }}>
               <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
                 <tr className="text-white">
                   {['Category','Amount','Date','Actions'].map(h => (
@@ -163,14 +168,20 @@ export default function Expenses() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
-                {error && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
-                {!isLoading && !error && rows.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No expenses</td></tr>}
-                {!isLoading && !error && rows.map((e, idx) => (
+                {isLoading && rows.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+                {error && rows.length === 0 && !isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+                {!isLoading && !error && rows.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">No expenses</td></tr>}
+                {rows.map((e, idx) => (
                   <ExpenseRow key={e.id} expense={e} idx={idx} onEdit={openEdit} onDelete={startDelete} />
                 ))}
               </tbody>
             </table>
+            {isFetching && rows.length > 0 && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <Spinner size={28} className="drop-shadow" />
+              </div>
+            )}
+            </div>
           </Card>
           <div className="flex items-center justify-between text-sm text-slate-600">
             <span>Page {page} of {totalPages}</span>
@@ -194,9 +205,11 @@ export default function Expenses() {
           <form onSubmit={save} className="space-y-4 text-sm">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
-              <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <Select
+                value={form.category}
+                onChange={e=>setForm(f=>({...f,category:e.target.value}))}
+                options={categories.map(c => ({ value: c, label: c }))}
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Amount</label>
@@ -228,21 +241,15 @@ export default function Expenses() {
 
 
 function ExpenseRow({ expense, idx, onEdit, onDelete }) {
-  const [showMenu, setShowMenu] = useState(false);
   return (
     <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
       <td className="px-4 py-3">{expense.category}</td>
       <td className="px-4 py-3">{Number(expense.amount||0).toLocaleString()}</td>
       <td className="px-4 py-3">{expense.date ? formatDMY(expense.date) : ''}</td>
-      <td className="px-4 py-3 text-xs">
-        <div className="relative inline-block">
-          <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
-          {showMenu && (
-            <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
-              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> { setShowMenu(false); onEdit(expense); }}>Edit</button>
-              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600" onClick={()=> { setShowMenu(false); onDelete(expense.id); }}>Delete</button>
-            </div>
-          )}
+      <td className="px-4 py-2 text-xs">
+        <div className="flex gap-2">
+          <button onClick={()=>onEdit(expense)} className="rounded border px-2 py-1 hover:bg-teal-50 border-teal-200 text-teal-700">Edit</button>
+          <button onClick={()=>onDelete(expense.id)} className="rounded border px-2 py-1 hover:bg-rose-50 border-rose-200 text-rose-600">Delete</button>
         </div>
       </td>
     </tr>

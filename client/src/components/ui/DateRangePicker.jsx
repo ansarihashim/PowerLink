@@ -74,23 +74,35 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
           className="z-[9999] rounded-lg border border-teal-100 bg-white p-3 shadow-lg shadow-teal-200/40"
           style={{ position: 'fixed', top: portalStyle.top, left: portalStyle.left, minWidth: Math.max(320, portalStyle.width) }}
         >
-          <div className="mb-2 grid grid-cols-1 gap-2 text-xs text-slate-600 sm:grid-cols-2">
-            <div>Start</div>
-            <div>End</div>
+          <div className="mb-2 grid grid-cols-2 gap-4 text-xs font-medium text-slate-600">
+            <div className="text-left">Start</div>
+            <div className="text-left">End</div>
           </div>
-          <div className="flex gap-3">
-            <DatePicker
-              value={tmpStart}
-              onChange={(e)=> { setTmpStart(e.target.value); setTmpStartText(formatDMY(e.target.value)); }}
-              inline
-              max={tmpEnd || undefined}
-            />
-            <DatePicker
-              value={tmpEnd}
-              onChange={(e)=> { setTmpEnd(e.target.value); setTmpEndText(formatDMY(e.target.value)); }}
-              inline
-              min={tmpStart || undefined}
-            />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-lg border border-teal-100 p-1">
+              <DatePicker
+                value={tmpStart}
+                onChange={(e)=> { setTmpStart(e.target.value); setTmpStartText(formatDMY(e.target.value)); }}
+                inline
+                max={tmpEnd || undefined}
+              />
+            </div>
+            <div className="rounded-lg border border-teal-100 p-1">
+              <DatePicker
+                value={tmpEnd}
+                onChange={(e)=> { setTmpEnd(e.target.value); setTmpEndText(formatDMY(e.target.value)); }}
+                inline
+                min={tmpStart || undefined}
+                fallbackViewDate={( ()=> {
+                  if (tmpEnd) return tmpEnd;
+                  if (tmpStart) {
+                    const d = new Date(tmpStart);
+                    return `${d.getFullYear()}-${String(d.getMonth()+2).padStart(2,'0')}-01`;
+                  }
+                  return undefined;
+                })()}
+              />
+            </div>
           </div>
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
