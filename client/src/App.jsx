@@ -16,6 +16,7 @@ import AddLoan from "./pages/AddLoan.jsx";
 import AddExpense from "./pages/AddExpense.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import PayInstallment from "./pages/PayInstallment.jsx";
+import Login from "./pages/Login.jsx";
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -42,29 +43,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
-  <div className="min-h-screen bg-slate-50" style={{
-    ['--pl-sidebar-w']: collapsed ? '5rem' : '16rem',
-    ['--pl-gap']: '2rem',
-    ['--pl-offset']: 'calc(var(--pl-sidebar-w) + var(--pl-gap))',
-  }}>
-        <Sidebar
-          open={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed((v) => !v)}
-        />
-        <Navbar
-          onMenuClick={() => setSidebarOpen((v) => !v)}
-          offsetClass={"lg:left-[var(--pl-offset)]"}
-        />
-  <main className={`relative pt-24 lg:pl-[var(--pl-offset)] pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
-    {/* Top fade and clip to prevent content showing in navbar gap */}
-    <div className="pointer-events-none absolute -top-8 left-0 right-0 h-12 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent" />
-          <div className="max-w-7xl mx-auto px-6">
-            <AnimatedRoutes />
-          </div>
-        </main>
-      </div>
+      <RouteAwareLayout
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
+        collapsed={collapsed}
+        setCollapsed={setCollapsed}
+      />
     </BrowserRouter>
   );
 }
@@ -81,6 +65,7 @@ function AnimatedRoutes() {
         transition={{ duration: 0.25 }}
       >
         <Routes location={location}>
+          <Route path="/login" element={<Login />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/workers" element={<Workers />} />
           <Route path="/loans" element={<Loans />} />
@@ -97,5 +82,40 @@ function AnimatedRoutes() {
         </Routes>
       </motion.div>
     </AnimatePresence>
+  );
+}
+
+function RouteAwareLayout({ sidebarOpen, setSidebarOpen, collapsed, setCollapsed }) {
+  const location = useLocation();
+  const authRoute = location.pathname.startsWith('/login');
+  if (authRoute) {
+    return <AnimatedRoutes />; // render only the auth page (Login)
+  }
+  return (
+    <div
+      className="min-h-screen bg-slate-50"
+      style={{
+        ['--pl-sidebar-w']: collapsed ? '5rem' : '16rem',
+        ['--pl-gap']: '2rem',
+        ['--pl-offset']: 'calc(var(--pl-sidebar-w) + var(--pl-gap))',
+      }}
+    >
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((v) => !v)}
+      />
+      <Navbar
+        onMenuClick={() => setSidebarOpen((v) => !v)}
+        offsetClass={"lg:left-[var(--pl-offset)]"}
+      />
+      <main className={`relative pt-24 lg:pl-[var(--pl-offset)] pb-8 transition-all duration-300 ease-in-out text-slate-700`}>
+        <div className="pointer-events-none absolute -top-8 left-0 right-0 h-12 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent" />
+        <div className="max-w-7xl mx-auto px-6">
+          <AnimatedRoutes />
+        </div>
+      </main>
+    </div>
   );
 }
