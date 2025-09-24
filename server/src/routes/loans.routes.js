@@ -94,6 +94,8 @@ async function deleteLoan(req, res) {
 		if (!mongoose.isValidObjectId(req.params.id)) return error(res, 'Invalid id', 'INVALID_ID', 400);
 		const del = await Loan.findByIdAndDelete(req.params.id);
 		if (!del) return error(res, 'Not found', 'NOT_FOUND', 404);
+		// Cascade remove installments for this loan to avoid orphans
+		await Installment.deleteMany({ loanId: del._id });
 		return res.status(204).send();
 	} catch (e) { return error(res, e.message); }
 }

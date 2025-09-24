@@ -64,8 +64,8 @@ export default function AddLoan() {
               value={form.workerId}
               onChange={(e)=> setForm(f=> ({...f, workerId: e.target.value}))}
               options={[
-                { value: "", label: "Select Worker ID" },
-                ...workers.map((w)=> ({ value: w.id, label: `${w.id} — ${w.name}` }))
+                { value: "", label: "Select Worker" },
+                ...workers.map((w)=> ({ value: w.id, label: w.name }))
               ]}
               className="px-3 py-2"
             />
