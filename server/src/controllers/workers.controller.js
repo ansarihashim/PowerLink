@@ -113,9 +113,14 @@ export async function updateWorker(req, res) {
 export async function deleteWorker(req, res) {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return error(res, 'Invalid id', 'INVALID_ID', 400);
-    // Using schema middleware cascade (pre findOneAndDelete)
-    const worker = await Worker.findByIdAndDelete(req.params.id);
+    // Attempt simple sequential cascade (works on standalone + replica set)
+    const worker = await Worker.findById(req.params.id);
     if (!worker) return error(res, 'Worker not found', 'NOT_FOUND', 404);
+    const loans = await Loan.find({ workerId: worker._id }, '_id');
+    const loanIds = loans.map(l => l._id);
+    if (loanIds.length) await Installment.deleteMany({ loanId: { $in: loanIds } });
+    if (loanIds.length) await Loan.deleteMany({ _id: { $in: loanIds } });
+    await Worker.deleteOne({ _id: worker._id });
     return res.status(204).send();
   } catch (e) { return error(res, e.message); }
 }

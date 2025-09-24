@@ -254,7 +254,7 @@ export default function Workers() {
   <ConfirmDialog
       open={!!deleteId}
       title="Delete worker?"
-      message="This action cannot be undone. Loans / installments referencing this worker may become orphaned."
+      message="Are you sure you want to delete this worker? This action cannot be undone."
       tone="danger"
       confirmLabel="Delete"
       onCancel={()=> setDeleteId(null)}
