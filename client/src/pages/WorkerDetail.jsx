@@ -114,8 +114,6 @@ export default function WorkerDetail() {
                       <tr>
                         <th className="px-3 py-2 text-left">Amount</th>
                         <th className="px-3 py-2 text-left">Date</th>
-                        <th className="px-3 py-2 text-left">Method</th>
-                        <th className="px-3 py-2 text-left">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
@@ -123,8 +121,6 @@ export default function WorkerDetail() {
                         <tr key={i._id} className="bg-white hover:bg-teal-50">
                           <td className="px-3 py-2">{(i.amount||0).toLocaleString()}</td>
                           <td className="px-3 py-2">{i.date ? formatDMY(i.date) : ''}</td>
-                          <td className="px-3 py-2">{i.method || ''}</td>
-                          <td className="px-3 py-2">{i.notes || ''}</td>
                         </tr>
                       ))}
                     </tbody>

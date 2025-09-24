@@ -26,6 +26,14 @@ export default function Loans() {
     queryFn: () => api.loans.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
   });
   const rows = (data?.data || []).map(l => ({ ...l, id: l._id }));
+  // Group loans by worker to display all loans per worker row
+  const grouped = rows.reduce((acc, loan) => {
+    const key = loan.workerId || loan.workerName || 'unknown';
+    if(!acc[key]) acc[key] = { workerId: loan.workerId, workerName: loan.workerName, loans: [] };
+    acc[key].loans.push(loan);
+    return acc;
+  }, {});
+  const groupedList = Object.values(grouped);
   const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));
 
   const deleteMutation = useMutation({
@@ -109,17 +117,17 @@ export default function Loans() {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
-              {['Worker','Loan Amount','Loan Date','Remaining','Reason','Actions'].map(h => (
-                <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
-              ))}
+              <th className="px-4 py-3 text-left font-medium">Worker</th>
+              <th className="px-4 py-3 text-left font-medium">Loans (All)</th>
+              <th className="px-4 py-3 text-left font-medium">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
-            {error && !isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
-            {!isLoading && !error && rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">No loans</td></tr>}
-            {!isLoading && !error && rows.map((l, idx) => (
-              <LoanRow key={l.id} loan={l} idx={idx} />
+            {isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+            {!isLoading && !error && groupedList.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No loans</td></tr>}
+            {!isLoading && !error && groupedList.map((g, idx) => (
+              <GroupedLoanRow key={g.workerId || idx} group={g} idx={idx} />
             ))}
           </tbody>
         </table>
@@ -136,47 +144,42 @@ export default function Loans() {
 }
 
 
-function LoanRow({ loan, idx }) {
-  const [showMenu, setShowMenu] = useState(false);
-  const queryClient = useQueryClient();
-  const deleteMutation = useMutation({
-    mutationFn: () => api.loans.remove(loan.id),
-    onMutate: async () => {
-      if (!confirm('Delete this loan?')) return Promise.reject('cancel');
-      await queryClient.cancelQueries({ queryKey: ['loans'] });
-      const prev = queryClient.getQueriesData({ queryKey: ['loans'] });
-      queryClient.setQueryData(['loans', expectKeyShape(queryClient)], (old)=>old); // noop safety
-      // optimistic removal across variants
-      prev.forEach(([key, val]) => {
-        if (val && val.data) {
-          queryClient.setQueryData(key, { ...val, data: val.data.filter(l => l._id !== loan.id) });
-        }
-      });
-      return { prev };
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) ctx.prev.forEach(([k,v]) => queryClient.setQueryData(k, v));
-    },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['loans'] })
-  });
-  const deleting = deleteMutation.isPending;
-  const onDelete = () => deleteMutation.mutate();
+function GroupedLoanRow({ group, idx }) {
+  const [expanded, setExpanded] = useState(false);
   return (
-    <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-      <td className="px-4 py-3">{loan.workerName || loan.workerId}</td>
-      <td className="px-4 py-3">{Number(loan.amount||0).toLocaleString()}</td>
-      <td className="px-4 py-3">{loan.loanDate ? formatDMY(loan.loanDate) : ''}</td>
-      <td className="px-4 py-3">{Number(loan.remaining||0).toLocaleString()}</td>
-      <td className="px-4 py-3">{loan.notes || loan.reason || ''}</td>
-      <td className="px-4 py-3 text-xs">
-        <div className="relative inline-block">
-          <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
-          {showMenu && (
-            <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
-              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> alert('Edit form TBD')}>Edit</button>
-              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600 disabled:opacity-50" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
-            </div>
-          )}
+    <tr className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+      <td className="px-4 py-3 align-top">
+        <div className="flex items-start gap-2">
+          <button onClick={()=> setExpanded(e=>!e)} className="mt-0.5 rounded border border-teal-300 px-2 py-0.5 text-xs text-teal-700 hover:bg-teal-50">{expanded ? '-' : '+'}</button>
+          <div>
+            <div className="font-medium">{group.workerName || group.workerId}</div>
+            <div className="text-[11px] text-slate-500">{group.loans.length} loan{group.loans.length!==1 && 's'}</div>
+          </div>
+        </div>
+      </td>
+      <td className="px-4 py-3">
+        {!expanded && (
+          <div className="text-xs text-slate-600">Expand to view all loans</div>
+        )}
+        {expanded && (
+          <div className="space-y-2">
+            {group.loans.map(l => (
+              <div key={l.id} className="rounded border border-teal-100 bg-teal-50 px-3 py-2">
+                <div className="flex flex-wrap gap-4 text-[11px] text-teal-800">
+                  <span><strong>Amount:</strong> {Number(l.amount||0).toLocaleString()}</span>
+                  <span><strong>Date:</strong> {l.loanDate ? formatDMY(l.loanDate) : ''}</span>
+                  <span><strong>Remaining:</strong> {Number(l.remaining||0).toLocaleString()}</span>
+                  {l.notes && <span><strong>Notes:</strong> {l.notes}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </td>
+      <td className="px-4 py-3 text-xs align-top">
+        <div className="flex gap-2">
+          <button className="rounded border px-2 py-1 hover:bg-teal-50 border-teal-200 text-teal-700" onClick={()=> alert('Edit worker loans TBD')}>Edit</button>
+          <button className="rounded border px-2 py-1 hover:bg-rose-50 border-rose-200 text-rose-600" onClick={()=> alert('Bulk delete TBD')}>Delete</button>
         </div>
       </td>
     </tr>

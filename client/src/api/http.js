@@ -61,6 +61,7 @@ export const api = {
       Object.entries(params).forEach(([k,v]) => { if (v !== undefined && v !== null && v !== '') q.append(k, v); });
       return request(`/loans?${q.toString()}`);
     },
+    listByWorker: (workerId) => request(`/loans?workerId=${workerId}`),
     create: (data) => request('/loans', { method: 'POST', body: data }),
     get: (id) => request(`/loans/${id}`),
     update: (id, data) => request(`/loans/${id}`, { method: 'PUT', body: data }),

@@ -15,6 +15,7 @@ async function listLoans(req, res) {
 	const from = req.query.from ? new Date(req.query.from) : null;
 	const to = req.query.to ? new Date(req.query.to) : null;
 	const filter = {};
+	if (req.query.workerId) filter.workerId = req.query.workerId;
 	if (from || to) filter.loanDate = {};
 	if (from) filter.loanDate.$gte = from;
 	if (to) filter.loanDate.$lte = to;
