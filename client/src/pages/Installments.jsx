@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { installments as seed } from "../data/installments.js";
+import { api } from "../api/http.js";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -19,32 +20,32 @@ export default function Installments() {
   const pageSize = 5;
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
-  const [filtered, setFiltered] = useState(seed);
+  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['installments', { page, pageSize, from, to, sortKey, sortDir }],
+    queryFn: () => api.installments.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
+  });
+  const rows = (data?.data || []).map(i => ({ ...i, id: i._id }));
+  const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));
 
-  useEffect(() => {
-    const fromD = from ? new Date(from) : null;
-    const toD = to ? new Date(to) : null;
-    const rows = seed.filter((i) => {
-      const d = new Date(i.date);
-      const fromOk = fromD ? d >= fromD : true;
-      const toOk = toD ? d <= toD : true;
-      return fromOk && toOk;
-    });
-    setFiltered(rows);
-    setPage(1);
-  }, [from, to]);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.installments.remove(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['installments'] });
+      const prev = queryClient.getQueriesData({ queryKey: ['installments'] });
+      queryClient.setQueryData(['installments', { page, pageSize, from, to, sortKey, sortDir }], (old) => {
+        if (!old) return old;
+        return { ...old, data: (old.data||[]).filter(i => i._id !== id) };
+      });
+      return { prev };
+    },
+    onError: (_e, _id, ctx) => {
+      if (ctx?.prev) ctx.prev.forEach(([k,v]) => queryClient.setQueryData(k, v));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['installments'] })
+  });
 
-  const { rows, totalPages } = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => {
-      const A = a[sortKey];
-      const B = b[sortKey];
-      if (A < B) return sortDir === "asc" ? -1 : 1;
-      if (A > B) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    const start = (page - 1) * pageSize;
-    return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
-  }, [filtered, sortKey, sortDir, page]);
+  // API handles sorting/paging.
 
   const exportCSV = () => {
     const columns = [
@@ -53,7 +54,7 @@ export default function Installments() {
       { key: 'amount', header: 'Installment Amount' },
       { key: 'date', header: 'Date Paid' },
     ];
-    const rowsToExport = filtered.map(i => ({
+    const rowsToExport = rows.map(i => ({
       ...i,
       date: formatDMY(i.date),
     }));
@@ -94,19 +95,17 @@ export default function Installments() {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
-              {['Loan ID','Worker','Installment Amount','Date Paid'].map(h => (
+              {['Loan','Worker','Amount','Date Paid','Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((i, idx) => (
-              <tr key={i.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                <td className="px-4 py-3">{i.loanId}</td>
-                <td className="px-4 py-3">{i.worker}</td>
-                <td className="px-4 py-3">{i.amount.toLocaleString()}</td>
-                <td className="px-4 py-3">{formatDMY(i.date)}</td>
-              </tr>
+            {isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && !isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+            {!isLoading && !error && rows.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">No installments</td></tr>}
+            {!loading && !error && rows.map((i, idx) => (
+              <InstallmentRow key={i.id} inst={i} idx={idx} />
             ))}
           </tbody>
         </table>
@@ -119,5 +118,46 @@ export default function Installments() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+function InstallmentRow({ inst, idx }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => api.installments.remove(inst.id),
+    onMutate: async () => {
+      if (!confirm('Delete this installment?')) return Promise.reject('cancel');
+      await queryClient.cancelQueries({ queryKey: ['installments'] });
+      const prev = queryClient.getQueriesData({ queryKey: ['installments'] });
+      prev.forEach(([key, val]) => {
+        if (val?.data) queryClient.setQueryData(key, { ...val, data: val.data.filter(i => i._id !== inst.id) });
+      });
+      return { prev };
+    },
+    onError: (_e,_v,ctx) => ctx?.prev?.forEach(([k,v]) => queryClient.setQueryData(k, v)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['installments'] })
+  });
+  const deleting = mutation.isPending;
+  const onDelete = () => mutation.mutate();
+  return (
+    <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+      <td className="px-4 py-3">{inst.loanId}</td>
+      <td className="px-4 py-3">{inst.workerName || inst.workerId || ''}</td>
+      <td className="px-4 py-3">{Number(inst.amount||0).toLocaleString()}</td>
+      <td className="px-4 py-3">{inst.date ? formatDMY(inst.date) : ''}</td>
+      <td className="px-4 py-3 text-xs">
+        <div className="relative inline-block">
+          <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
+          {showMenu && (
+            <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
+              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> alert('Edit form TBD')}>Edit</button>
+              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600 disabled:opacity-50" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }

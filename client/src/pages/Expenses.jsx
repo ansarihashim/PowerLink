@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
-import { expenses as seed } from "../data/expenses.js";
+import { api } from "../api/http.js";
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -8,6 +8,7 @@ import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { downloadCSV } from "../utils/export.js";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export default function Expenses() {
   const [searchParams] = useSearchParams();
@@ -20,35 +21,33 @@ export default function Expenses() {
   const [category, setCategory] = useState("all");
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
-  const [filtered, setFiltered] = useState(seed);
+  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['expenses', { page, pageSize, from, to, sortKey, sortDir, category }],
+    queryFn: () => {
+      const params = { page, pageSize, from, to, sortBy: sortKey, sortDir };
+      if (category !== 'all') params.category = category;
+      return api.expenses.list(params);
+    }
+  });
+  const rows = (data?.data || []).map(e => ({ ...e, id: e._id }));
+  const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.expenses.remove(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['expenses'] });
+      const prev = queryClient.getQueriesData({ queryKey: ['expenses'] });
+      queryClient.setQueryData(['expenses', { page, pageSize, from, to, sortKey, sortDir, category }], (old) => {
+        if (!old) return old;
+        return { ...old, data: (old.data||[]).filter(e => e._id !== id) };
+      });
+      return { prev };
+    },
+    onError: (_e,_id,ctx) => ctx?.prev?.forEach(([k,v]) => queryClient.setQueryData(k, v)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+  });
 
-  useEffect(() => {
-    const fromD = from ? new Date(from) : null;
-    const toD = to ? new Date(to) : null;
-    const rows = seed.filter((e) => {
-      const catOk = category === 'all' ? true : e.category === category;
-      const d = new Date(e.date);
-      const fromOk = fromD ? d >= fromD : true;
-      const toOk = toD ? d <= toD : true;
-      return catOk && fromOk && toOk;
-    });
-    setFiltered(rows);
-    setPage(1);
-  }, [category, from, to]);
-
-  const { rows, totalPages, total } = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => {
-      const A = a[sortKey];
-      const B = b[sortKey];
-      if (A < B) return sortDir === "asc" ? -1 : 1;
-      if (A > B) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    const start = (page - 1) * pageSize;
-    const pageRows = sorted.slice(start, start + pageSize);
-    const total = filtered.reduce((s, e) => s + e.amount, 0);
-    return { rows: pageRows, totalPages: Math.ceil(sorted.length / pageSize), total };
-  }, [filtered, sortKey, sortDir, page]);
+  const total = rows.reduce((s, e) => s + (e.amount||0), 0);
 
   const exportCSV = () => {
     const columns = [
@@ -56,7 +55,7 @@ export default function Expenses() {
       { key: 'amount', header: 'Amount' },
       { key: 'date', header: 'Date' },
     ];
-    const rowsToExport = filtered.map(e => ({
+    const rowsToExport = rows.map(e => ({
       ...e,
       date: formatDMY(e.date),
     }));
@@ -114,18 +113,17 @@ export default function Expenses() {
             <table className="min-w-full divide-y divide-gray-200 text-sm">
               <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
                 <tr className="text-white">
-                  {['Category','Amount','Date'].map(h => (
+                  {['Category','Amount','Date','Actions'].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {rows.map((e, idx) => (
-                  <tr key={e.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                    <td className="px-4 py-3">{e.category}</td>
-                    <td className="px-4 py-3">{e.amount.toLocaleString()}</td>
-                    <td className="px-4 py-3">{formatDMY(e.date)}</td>
-                  </tr>
+                {isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+                {error && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+                {!isLoading && !error && rows.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No expenses</td></tr>}
+                {!loading && !error && rows.map((e, idx) => (
+                  <ExpenseRow key={e.id} expense={e} idx={idx} />
                 ))}
               </tbody>
             </table>
@@ -148,5 +146,45 @@ export default function Expenses() {
         </aside>
       </div>
     </div>
+  );
+}
+
+
+function ExpenseRow({ expense, idx }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => api.expenses.remove(expense.id),
+    onMutate: async () => {
+      if (!confirm('Delete this expense?')) return Promise.reject('cancel');
+      await queryClient.cancelQueries({ queryKey: ['expenses'] });
+      const prev = queryClient.getQueriesData({ queryKey: ['expenses'] });
+      prev.forEach(([key, val]) => {
+        if (val?.data) queryClient.setQueryData(key, { ...val, data: val.data.filter(e => e._id !== expense.id) });
+      });
+      return { prev };
+    },
+    onError: (_e,_v,ctx) => ctx?.prev?.forEach(([k,v]) => queryClient.setQueryData(k, v)),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
+  });
+  const deleting = mutation.isPending;
+  const onDelete = () => mutation.mutate();
+  return (
+    <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+      <td className="px-4 py-3">{expense.category}</td>
+      <td className="px-4 py-3">{Number(expense.amount||0).toLocaleString()}</td>
+      <td className="px-4 py-3">{expense.date ? formatDMY(expense.date) : ''}</td>
+      <td className="px-4 py-3 text-xs">
+        <div className="relative inline-block">
+          <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
+          {showMenu && (
+            <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
+              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> alert('Edit form TBD')}>Edit</button>
+              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600 disabled:opacity-50" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
   );
 }

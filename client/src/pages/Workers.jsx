@@ -5,7 +5,8 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
-import { workers as seed } from "../data/workers.js";
+// Seed import removed; now data comes from API
+import { api } from "../api/http.js";
 import { formatDMY } from "../utils/date.js";
 import { downloadCSV } from "../utils/export.js";
 
@@ -20,33 +21,34 @@ export default function Workers() {
   const [q, setQ] = useState("");
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
-  const [filtered, setFiltered] = useState(seed);
+  const [rows, setRows] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fromD = from ? new Date(from) : null;
-    const toD = to ? new Date(to) : null;
-    const rows = seed.filter((w) => {
-      const nameOk = q ? w.name.toLowerCase().includes(q.toLowerCase()) : true;
-      const d = new Date(w.joiningDate);
-      const fromOk = fromD ? d >= fromD : true;
-      const toOk = toD ? d <= toD : true;
-      return nameOk && fromOk && toOk;
-    });
-    setFiltered(rows);
-    setPage(1);
-  }, [q, from, to]);
+    let alive = true;
+    setLoading(true); setError("");
+    const params = { page, pageSize, q, from, to, sortBy: sortKey, sortDir };
+    api.workers.list(params)
+      .then(r => {
+        if (!alive) return;
+        const data = r.data || [];
+        setRows(data.map(w => ({
+          ...w,
+          id: w._id,
+          totalLoan: w.totalLoan ?? 0,
+          remainingLoan: w.remainingLoan ?? 0,
+        })));
+        const total = r.meta?.total || data.length;
+        setTotalPages(Math.max(1, Math.ceil(total / pageSize)));
+      })
+      .catch(e => { if (alive) setError(e.message); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [page, q, from, to, sortKey, sortDir]);
 
-  const { rows, totalPages } = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => {
-      const A = a[sortKey];
-      const B = b[sortKey];
-      if (A < B) return sortDir === "asc" ? -1 : 1;
-      if (A > B) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    const start = (page - 1) * pageSize;
-    return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
-  }, [filtered, sortKey, sortDir, page]);
+  // Client-side sorting removed (handled by API). rows already represent current page.
 
   const exportCSV = () => {
     const columns = [
@@ -58,7 +60,8 @@ export default function Workers() {
       { key: 'totalLoan', header: 'Loan Taken' },
       { key: 'remainingLoan', header: 'Remaining Loan Amount' },
     ];
-    const rowsToExport = filtered.map(w => ({
+    // For CSV export fetch a larger page to include more rows (simple approach)
+    const rowsToExport = rows.map(w => ({
       ...w,
       joiningDate: formatDMY(w.joiningDate),
     }));
@@ -108,15 +111,28 @@ export default function Workers() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((w, idx) => (
-              <tr key={w.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+            {loading && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>
+            )}
+            {error && !loading && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>
+            )}
+            {!loading && !error && rows.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-slate-500">No workers found</td></tr>
+            )}
+            {!loading && !error && rows.map((w, idx) => (
+              <tr
+                key={w.id}
+                className={`cursor-pointer transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                onClick={() => window.location.href = `/workers/${w.id}`}
+              >
                 <td className="px-4 py-3">{w.id}</td>
                 <td className="px-4 py-3">{w.name}</td>
                 <td className="px-4 py-3">{w.phone}</td>
                 <td className="px-4 py-3">{w.address}</td>
-                <td className="px-4 py-3">{formatDMY(w.joiningDate)}</td>
-                <td className="px-4 py-3">{w.totalLoan.toLocaleString()}</td>
-                <td className="px-4 py-3">{w.remainingLoan.toLocaleString()}</td>
+                <td className="px-4 py-3">{w.joiningDate ? formatDMY(w.joiningDate) : ''}</td>
+                <td className="px-4 py-3">{Number(w.totalLoan||0).toLocaleString()}</td>
+                <td className="px-4 py-3">{Number(w.remainingLoan||0).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>

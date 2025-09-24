@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { beam as seed } from "../data/beam.js";
+import { api } from "../api/http.js";
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -15,40 +15,29 @@ export default function Beam() {
   const pageSize = 5;
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [filtered, setFiltered] = useState(seed);
+  const [rows, setRows] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Filter by date range
   useEffect(() => {
-    const fromD = from ? new Date(from) : null;
-    const toD = to ? new Date(to) : null;
-    const rows = seed.filter((r) => {
-      const d = new Date(r.date);
-      const fromOk = fromD ? d >= fromD : true;
-      const toOk = toD ? d <= toD : true;
-      return fromOk && toOk;
-    });
-    setFiltered(rows);
-    setPage(1);
-  }, [from, to]);
+    let alive = true; setLoading(true); setError("");
+    api.beam.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
+      .then(r => { if(!alive) return; const data = r.data||[]; setRows(data.map(b => ({ ...b, id: b._id }))); const total = r.meta?.total || data.length; setTotalPages(Math.max(1, Math.ceil(total/pageSize))); })
+      .catch(e => { if(alive) setError(e.message); })
+      .finally(()=> alive && setLoading(false));
+    return () => { alive = false; };
+  }, [page, from, to, sortKey, sortDir]);
 
-  const { rows, totalPages } = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => {
-      const A = a[sortKey];
-      const B = b[sortKey];
-      if (A < B) return sortDir === "asc" ? -1 : 1;
-      if (A > B) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    const start = (page - 1) * pageSize;
-    return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
-  }, [filtered, sortKey, sortDir, page]);
+  // API handles sorting/paging.
 
   const exportCSV = () => {
     const columns = [
       { key: 'date', header: 'Date' },
       { key: 'bunches', header: 'Bunches' },
     ];
-    const rowsToExport = filtered.map((r) => ({
+    const rowsToExport = rows.map((r) => ({
       ...r,
       date: formatDMY(r.date),
     }));
@@ -93,9 +82,12 @@ export default function Beam() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((b, idx) => (
+            {loading && <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && !loading && <tr><td colSpan={2} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>}
+            {!loading && !error && rows.length === 0 && <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-500">No beam records</td></tr>}
+            {!loading && !error && rows.map((b, idx) => (
               <tr key={b.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                <td className="px-4 py-3">{formatDMY(b.date)}</td>
+                <td className="px-4 py-3">{b.date ? formatDMY(b.date) : ''}</td>
                 <td className="px-4 py-3">{b.bunches}</td>
               </tr>
             ))}

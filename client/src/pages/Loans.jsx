@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
-import { loans as seed } from "../data/loans.js";
+import { api } from "../api/http.js";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDMY } from "../utils/date.js";
 import { downloadCSV } from "../utils/export.js";
 
@@ -19,32 +20,41 @@ export default function Loans() {
   const pageSize = 5;
   const [from, setFrom] = useState(initialFrom);
   const [to, setTo] = useState(initialTo);
-  const [filtered, setFiltered] = useState(seed);
+  const queryClient = useQueryClient();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['loans', { page, pageSize, from, to, sortKey, sortDir }],
+    queryFn: () => api.loans.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
+  });
+  const rows = (data?.data || []).map(l => ({ ...l, id: l._id }));
+  const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));
 
-  useEffect(() => {
-    const fromD = from ? new Date(from) : null;
-    const toD = to ? new Date(to) : null;
-    const rows = seed.filter((l) => {
-      const d = new Date(l.loanDate);
-      const fromOk = fromD ? d >= fromD : true;
-      const toOk = toD ? d <= toD : true;
-      return fromOk && toOk;
-    });
-    setFiltered(rows);
-    setPage(1);
-  }, [from, to]);
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.loans.remove(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['loans'] });
+      const prev = queryClient.getQueriesData({ queryKey: ['loans'] });
+      queryClient.setQueriesData({ queryKey: ['loans'] }, (oldArr) => {
+        if (!oldArr) return oldArr;
+        if (Array.isArray(oldArr)) return oldArr; // unexpected shape
+        // For each cached variant update
+        return oldArr;
+      });
+      // simpler: directly update specific key
+      queryClient.setQueryData(['loans', { page, pageSize, from, to, sortKey, sortDir }], (old) => {
+        if (!old) return old;
+        return { ...old, data: (old.data||[]).filter(l => l._id !== id) };
+      });
+      return { prev };
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.prev) ctx.prev.forEach(([key, val]) => queryClient.setQueryData(key, val));
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['loans'] });
+    }
+  });
 
-  const { rows, totalPages } = useMemo(() => {
-    const sorted = [...filtered].sort((a, b) => {
-      const A = a[sortKey];
-      const B = b[sortKey];
-      if (A < B) return sortDir === "asc" ? -1 : 1;
-      if (A > B) return sortDir === "asc" ? 1 : -1;
-      return 0;
-    });
-    const start = (page - 1) * pageSize;
-    return { rows: sorted.slice(start, start + pageSize), totalPages: Math.ceil(sorted.length / pageSize) };
-  }, [filtered, sortKey, sortDir, page]);
+  // Sorting handled by API
 
   const exportCSV = () => {
     const columns = [
@@ -54,7 +64,7 @@ export default function Loans() {
       { key: 'remaining', header: 'Remaining Loan' },
       { key: 'reason', header: 'Reason' },
     ];
-    const rowsToExport = filtered.map(l => ({
+    const rowsToExport = rows.map(l => ({
       ...l,
       loanDate: formatDMY(l.loanDate),
     }));
@@ -99,20 +109,17 @@ export default function Loans() {
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
-              {['Worker ID','Loan Amount','Loan Date','Remaining Loan','Reason'].map(h => (
+              {['Worker','Loan Amount','Loan Date','Remaining','Reason','Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {rows.map((l, idx) => (
-              <tr key={l.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                <td className="px-4 py-3">{l.workerId}</td>
-                <td className="px-4 py-3">{l.amount.toLocaleString()}</td>
-                <td className="px-4 py-3">{formatDMY(l.loanDate)}</td>
-                <td className="px-4 py-3">{l.remaining.toLocaleString()}</td>
-                <td className="px-4 py-3">{l.reason}</td>
-              </tr>
+            {isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && !isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
+            {!isLoading && !error && rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">No loans</td></tr>}
+            {!loading && !error && rows.map((l, idx) => (
+              <LoanRow key={l.id} loan={l} idx={idx} />
             ))}
           </tbody>
         </table>
@@ -127,3 +134,54 @@ export default function Loans() {
     </div>
   );
 }
+
+
+function LoanRow({ loan, idx }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const queryClient = useQueryClient();
+  const deleteMutation = useMutation({
+    mutationFn: () => api.loans.remove(loan.id),
+    onMutate: async () => {
+      if (!confirm('Delete this loan?')) return Promise.reject('cancel');
+      await queryClient.cancelQueries({ queryKey: ['loans'] });
+      const prev = queryClient.getQueriesData({ queryKey: ['loans'] });
+      queryClient.setQueryData(['loans', expectKeyShape(queryClient)], (old)=>old); // noop safety
+      // optimistic removal across variants
+      prev.forEach(([key, val]) => {
+        if (val && val.data) {
+          queryClient.setQueryData(key, { ...val, data: val.data.filter(l => l._id !== loan.id) });
+        }
+      });
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      if (ctx?.prev) ctx.prev.forEach(([k,v]) => queryClient.setQueryData(k, v));
+    },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['loans'] })
+  });
+  const deleting = deleteMutation.isPending;
+  const onDelete = () => deleteMutation.mutate();
+  return (
+    <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+      <td className="px-4 py-3">{loan.workerName || loan.workerId}</td>
+      <td className="px-4 py-3">{Number(loan.amount||0).toLocaleString()}</td>
+      <td className="px-4 py-3">{loan.loanDate ? formatDMY(loan.loanDate) : ''}</td>
+      <td className="px-4 py-3">{Number(loan.remaining||0).toLocaleString()}</td>
+      <td className="px-4 py-3">{loan.notes || loan.reason || ''}</td>
+      <td className="px-4 py-3 text-xs">
+        <div className="relative inline-block">
+          <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
+          {showMenu && (
+            <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
+              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> alert('Edit form TBD')}>Edit</button>
+              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600 disabled:opacity-50" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
+            </div>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+// helper to avoid TS complaints (placeholder) - runtime no-op
+function expectKeyShape() { return {}; }

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 import { motion } from 'framer-motion';
 import Button from '../components/ui/Button.jsx';
 
@@ -7,6 +9,8 @@ const passwordRule = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}$/;
 
 export default function Login() {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
+  const { login, register } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -24,9 +28,12 @@ export default function Login() {
     if (!validPassword) return setError('Password must be 6+ chars, include lowercase, uppercase & a special character');
     try {
       setLoading(true);
-      // Placeholder: replace with real API call later
-      await new Promise(r => setTimeout(r, 700));
-      alert(`${mode === 'login' ? 'Logged in' : 'Registered'} (demo only)`);
+      if (mode === 'login') {
+        await login({ email, password });
+      } else {
+        await register({ name, email, password });
+      }
+      navigate('/');
     } catch (err) {
       setError(err.message || 'Something went wrong');
     } finally { setLoading(false); }
