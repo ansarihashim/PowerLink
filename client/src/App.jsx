@@ -20,6 +20,7 @@ import AddBeam from "./pages/AddBeam.jsx";
 import Notifications from "./pages/Notifications.jsx";
 import PayInstallment from "./pages/PayInstallment.jsx";
 import Login from "./pages/Login.jsx";
+import Profile from "./pages/Profile.jsx";
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 
 export default function App() {
@@ -95,6 +96,7 @@ function AnimatedRoutes() {
           <Route path="/add-expense" element={<Private><AddExpense /></Private>} />
           <Route path="/add-baana" element={<Private><AddBaana /></Private>} />
           <Route path="/add-beam" element={<Private><AddBeam /></Private>} />
+          <Route path="/profile" element={<Private><Profile /></Private>} />
         </Routes>
       </motion.div>
     </AnimatePresence>

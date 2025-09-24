@@ -1,9 +1,30 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" }) {
   // Control for the profile dropdown (click-only)
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    if (confirm("Are you sure you want to logout?")) {
+      try {
+        await logout();
+        navigate('/login');
+      } catch (error) {
+        console.error('Logout failed:', error);
+      }
+    }
+    setMenuOpen(false);
+  };
+
+  const handleProfileClick = () => {
+    navigate('/profile');
+    setMenuOpen(false);
+  };
 
   // Close on outside click or Escape
   useEffect(() => {
@@ -49,10 +70,12 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
           {/* Profile + dropdown (click on arrow only) */}
           <div className="relative" ref={menuRef}>
             <div className="flex items-center gap-2 select-none">
-              <div className="h-8 w-8 rounded-full bg-white/20 text-white grid place-items-center text-sm shadow">AD</div>
+              <div className="h-8 w-8 rounded-full bg-white/20 text-white grid place-items-center text-sm shadow">
+                {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
               <div className="hidden sm:block text-sm">
-                <div className="font-medium">Admin</div>
-                <div className="text-white/80">Administrator</div>
+                <div className="font-medium">{user?.name || 'User'}</div>
+                <div className="text-white/80">{user?.role || 'Member'}</div>
               </div>
               <button
                 type="button"
@@ -68,11 +91,18 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
             {/* Dropdown */}
             {menuOpen && (
               <div role="menu" className="transition-all duration-200 absolute right-0 mt-2 w-44 rounded-lg border border-white/20 bg-white/95 backdrop-blur p-2 shadow-lg">
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 hover:shadow-md hover:shadow-teal-200/50 transition-all duration-200">
+                <button 
+                  onClick={handleProfileClick}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 hover:shadow-md hover:shadow-teal-200/50 transition-all duration-200"
+                >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" strokeWidth="1.5"/></svg>
                   Profile
                 </button>
-                <button className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 hover:shadow-md hover:shadow-teal-200/50 transition-all duration-200">
+                <div className="h-px bg-slate-200 my-1"></div>
+                <button 
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-rose-700 hover:bg-rose-50 hover:text-rose-800 hover:shadow-md hover:shadow-rose-200/50 transition-all duration-200"
+                >
                   <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 16l4-4m0 0l-4-4m4 4H7" strokeWidth="1.5"/></svg>
                   Logout
                 </button>

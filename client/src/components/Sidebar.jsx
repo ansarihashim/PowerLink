@@ -26,6 +26,9 @@ const navItems = [
   { to: "/calendar", label: "Calendar", icon: (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="1.5"/><path d="M16 2v4M8 2v4M3 10h18" strokeWidth="1.5"/></svg>
   ) },
+  { to: "/profile", label: "Profile", icon: (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" strokeWidth="1.5"/></svg>
+  ) },
 ];
 
 export default function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
