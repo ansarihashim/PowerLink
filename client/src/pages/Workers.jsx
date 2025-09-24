@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
@@ -14,6 +14,7 @@ import { useToast } from "../components/ui/ToastProvider.jsx";
 import { downloadCSV } from "../utils/export.js";
 
 export default function Workers() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialFrom = searchParams.get('from') || "";
   const initialTo = searchParams.get('to') || "";
@@ -175,7 +176,8 @@ export default function Workers() {
             {!loading && !error && rows.map((w, idx) => (
               <tr
                 key={w.id}
-                className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}
+                onClick={(e)=> { if(e.target.tagName !== 'BUTTON') navigate(`/workers/${w.id}`); }}
+                className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} cursor-pointer`}
               >
                 <td className="px-4 py-3 font-mono text-[11px]">{w.id}</td>
                 <td className="px-4 py-3">{w.name}</td>

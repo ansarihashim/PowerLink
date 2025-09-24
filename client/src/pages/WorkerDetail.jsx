@@ -59,20 +59,78 @@ export default function WorkerDetail() {
         {loading && <div className="text-sm text-slate-500">Loading...</div>}
         {error && <div className="mb-3 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
         {!loading && !error && data && !edit && (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <Field label="ID" value={data._id} />
               <Field label="Name" value={data.name} />
               <Field label="Phone" value={data.phone} />
               <Field label="Address" value={data.address} />
               <Field label="Joining Date" value={data.joiningDate ? formatDMY(data.joiningDate) : ''} />
-              <Field label="Total Loan" value={data.totalLoan ?? 0} />
-              <Field label="Remaining Loan" value={data.remainingLoan ?? 0} />
+              <Field label="Total Loan" value={(data.totalLoan ?? 0).toLocaleString()} />
+              <Field label="Remaining Loan" value={(data.remainingLoan ?? 0).toLocaleString()} />
             </div>
             <div className="flex gap-2">
               <Button onClick={() => setEdit(true)}>Edit</Button>
               <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
               <Button variant="danger" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</Button>
+            </div>
+            {/* Loans List */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">Loans</h3>
+              {(!data.loans || data.loans.length===0) && <div className="text-xs text-slate-500">No loans</div>}
+              {data.loans && data.loans.length>0 && (
+                <div className="overflow-x-auto rounded border border-slate-200">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-teal-600 text-white">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Amount</th>
+                        <th className="px-3 py-2 text-left">Loan Date</th>
+                        <th className="px-3 py-2 text-left">Paid</th>
+                        <th className="px-3 py-2 text-left">Remaining</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {data.loans.map(l => (
+                        <tr key={l._id} className="bg-white hover:bg-teal-50">
+                          <td className="px-3 py-2">{(l.amount||0).toLocaleString()}</td>
+                          <td className="px-3 py-2">{l.loanDate ? formatDMY(l.loanDate) : ''}</td>
+                          <td className="px-3 py-2">{(l.paid||0).toLocaleString()}</td>
+                          <td className="px-3 py-2">{(l.remaining||Math.max(0,(l.amount||0)-(l.paid||0))).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+            {/* Installments */}
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">Installments</h3>
+              {(!data.installments || data.installments.length===0) && <div className="text-xs text-slate-500">No installments</div>}
+              {data.installments && data.installments.length>0 && (
+                <div className="overflow-x-auto rounded border border-slate-200">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-teal-600 text-white">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Amount</th>
+                        <th className="px-3 py-2 text-left">Date</th>
+                        <th className="px-3 py-2 text-left">Method</th>
+                        <th className="px-3 py-2 text-left">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {data.installments.map(i => (
+                        <tr key={i._id} className="bg-white hover:bg-teal-50">
+                          <td className="px-3 py-2">{(i.amount||0).toLocaleString()}</td>
+                          <td className="px-3 py-2">{i.date ? formatDMY(i.date) : ''}</td>
+                          <td className="px-3 py-2">{i.method || ''}</td>
+                          <td className="px-3 py-2">{i.notes || ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </div>
         )}
