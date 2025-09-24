@@ -9,7 +9,7 @@ import { useToast } from "../components/ui/ToastProvider.jsx";
 import { prepareAvatar } from "../utils/image.js";
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -74,6 +74,7 @@ export default function Profile() {
         if (old.user) return { ...old, user: updated };
         return updated;
       });
+      updateUser({ avatar: res.user?.avatar || dataUrl });
       push({ type: 'success', title: 'Avatar Updated', message: 'Your profile picture has been saved.' });
       setAvatarDirty(false);
     } catch (err) {

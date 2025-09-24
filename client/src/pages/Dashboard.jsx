@@ -2,13 +2,8 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
-import { useMemo, useState } from "react";
-import { workers } from "../data/workers.js";
-import { baana } from "../data/baana.js";
-import { beam } from "../data/beam.js";
-import { loans } from "../data/loans.js";
-import { installments } from "../data/installments.js";
-import { expenses } from "../data/expenses.js";
+import { useMemo, useState, useEffect } from "react";
+import { api } from "../api/http.js";
 import { useNavigate } from "react-router-dom";
 import { formatDMY } from "../utils/date.js";
 
@@ -30,81 +25,29 @@ export default function Dashboard() {
     return `${left} → ${right}`;
   }, [from, to]);
 
-  // previous period only when both from and to exist
-  const prevRange = useMemo(() => {
-    if (!from || !to) return { prevFrom: "", prevTo: "" };
-    const fromD = new Date(from);
-    const toD = new Date(to);
-    const ms = toD.getTime() - fromD.getTime();
-    const dayMs = 24*60*60*1000;
-    const durationDays = Math.max(0, Math.round(ms / dayMs));
-    const prevToD = new Date(fromD.getTime() - dayMs);
-    const prevFromD = new Date(prevToD.getTime() - (durationDays * dayMs));
-    const fmt = (d)=> `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    return { prevFrom: fmt(prevFromD), prevTo: fmt(prevToD) };
-  }, [from, to]);
+  // (Comparison range removed for now; can be reintroduced later)
 
-  const { totalWorkers, totalRemainingLoan, lastBaanaDate, lastBeamDate, recent, kpis } = useMemo(() => {
-    const totalWorkers = workers.length;
-    const totalRemainingLoan = workers.reduce((sum, w) => sum + (w.remainingLoan || 0), 0);
+  const [stats, setStats] = useState({ workers:0, loansIssued:0, installmentsReceived:0, expenses:0 });
+  const [recent, setRecent] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [statsError, setStatsError] = useState("");
 
-    const latestOf = (arr, key) => {
-      if (!arr || arr.length === 0) return "—";
-      const latest = arr.reduce((max, item) => (new Date(item[key]) > new Date(max[key]) ? item : max), arr[0]);
-      return latest[key] || "—";
-    };
+  useEffect(()=> {
+    let alive = true;
+    setLoadingStats(true); setStatsError("");
+    api.stats.summary({ from, to })
+      .then(data => { if (alive) setStats(data); })
+      .catch(err => { if (alive) setStatsError(err.message || 'Failed loading stats'); })
+      .finally(()=> { if (alive) setLoadingStats(false); });
+    return ()=> { alive=false; };
+  }, [from,to]);
 
-    const lastBaanaDate = latestOf(baana, "date");
-    const lastBeamDate = latestOf(beam, "date");
-
-    // Range helpers
-    const inRange = (dStr) => {
-      const d = new Date(dStr);
-      const fromOk = from ? d >= new Date(from) : true;
-      const toOk = to ? d <= new Date(to) : true;
-      return fromOk && toOk;
-    };
-    const inPrevRange = (dStr) => {
-      if (!prevRange.prevFrom || !prevRange.prevTo) return false;
-      const d = new Date(dStr);
-      return d >= new Date(prevRange.prevFrom) && d <= new Date(prevRange.prevTo);
-    };
-
-    // Recent notifications (respect current range if set)
-    const updates = [
-      ...workers.map((w) => ({ date: w.joiningDate, text: `Worker joined: ${w.name}` })),
-      ...loans.map((l) => ({ date: l.loanDate, text: `Loan taken: ${l.workerId} - ${l.amount.toLocaleString()}` })),
-      ...installments.map((i) => ({ date: i.date, text: `Installment paid: ${i.worker} - ${i.amount.toLocaleString()}` })),
-      ...expenses.map((e) => ({ date: e.date, text: `Expense added: ${e.category} - ${e.amount.toLocaleString()}` })),
-      ...baana.map((b) => ({ date: b.date, text: `Baana arrival: ${b.sacks} sacks` })),
-      ...beam.map((b) => ({ date: b.date, text: `Beam arrival: ${b.bunches} bunches` })),
-    ]
-      .filter((x) => (!from && !to) ? true : inRange(x.date))
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
-
-    // KPI set within selected range (and previous range for comparison)
-    const workersNow = workers.filter((w) => inRange(w.joiningDate)).length;
-    const workersPrev = workers.filter((w) => inPrevRange(w.joiningDate)).length;
-
-    const loansNow = loans.filter((l) => inRange(l.loanDate)).reduce((s, l) => s + (l.amount || 0), 0);
-    const loansPrev = loans.filter((l) => inPrevRange(l.loanDate)).reduce((s, l) => s + (l.amount || 0), 0);
-
-    const instNow = installments.filter((i) => inRange(i.date)).reduce((s, i) => s + (i.amount || 0), 0);
-    const instPrev = installments.filter((i) => inPrevRange(i.date)).reduce((s, i) => s + (i.amount || 0), 0);
-
-    const expNow = expenses.filter((e) => inRange(e.date)).reduce((s, e) => s + (e.amount || 0), 0);
-    const expPrev = expenses.filter((e) => inPrevRange(e.date)).reduce((s, e) => s + (e.amount || 0), 0);
-
-    const kpis = [
-      { key: 'workers', label: 'New Workers', value: workersNow, prev: workersPrev, route: '/workers' },
-      { key: 'loans', label: 'Loans Issued', value: loansNow, prev: loansPrev, route: '/loans', isCurrency: true },
-      { key: 'installments', label: 'Installments Received', value: instNow, prev: instPrev, route: '/installments', isCurrency: true },
-      { key: 'expenses', label: 'Expenses', value: expNow, prev: expPrev, route: '/expenses', isCurrency: true },
-    ];
-
-    return { totalWorkers, totalRemainingLoan, lastBaanaDate, lastBeamDate, recent: updates, kpis };
-  }, [from, to, prevRange.prevFrom, prevRange.prevTo]);
+  const kpis = [
+    { key: 'workers', label: 'New Workers', value: stats.workers, route: '/workers' },
+    { key: 'loans', label: 'Loans Issued', value: stats.loansIssued, route: '/loans', isCurrency: true },
+    { key: 'installments', label: 'Installments Received', value: stats.installmentsReceived, route: '/installments', isCurrency: true },
+    { key: 'expenses', label: 'Expenses', value: stats.expenses, route: '/expenses', isCurrency: true },
+  ];
 
   return (
     <div className="space-y-6">
@@ -121,7 +64,6 @@ export default function Dashboard() {
         <p className="text-white/90">Here’s a snapshot of your powerloom network.</p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-white/90">Filtered by: <span className="font-medium">{rangeCaption}</span></div>
-          {/* Controls removed as requested: date range, compare, print snapshot */}
         </div>
       </motion.div>
 
@@ -130,7 +72,8 @@ export default function Dashboard() {
         <h3 className="mb-3 text-sm font-medium text-gray-700">Key Statistics</h3>
         <div id="kpi-snapshot" className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 print:grid-cols-2 print:gap-3">
           {kpis.map((kpi, idx) => {
-            const fmtVal = kpi.isCurrency ? kpi.value.toLocaleString() : kpi.value.toLocaleString();
+            const rawVal = loadingStats ? null : kpi.value;
+            const fmtVal = rawVal == null ? '…' : (kpi.isCurrency ? rawVal.toLocaleString() : rawVal.toLocaleString());
             const diff = (kpi.prev ?? 0) === 0 ? (kpi.value > 0 ? 100 : 0) : Math.round(((kpi.value - kpi.prev) / kpi.prev) * 100);
             const up = kpi.value >= (kpi.prev ?? 0);
             const showDelta = false; // compare UI removed
@@ -153,6 +96,9 @@ export default function Dashboard() {
                   <div className="text-sm text-slate-600">{kpi.label}</div>
                 </div>
                 <div className="mt-3 text-2xl font-semibold">{fmtVal}</div>
+                {!loadingStats && statsError && (
+                  <div className="mt-1 text-[11px] text-rose-600">{statsError}</div>
+                )}
                 {showDelta && (
                   <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${up ? 'bg-teal-50 text-teal-700' : 'bg-rose-50 text-rose-700'} print:bg-transparent print:border print:border-gray-300`}>
                     <svg className={`h-3 w-3 ${up ? '' : 'rotate-180'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14m0 0l-6-6m6 6l6-6" strokeWidth="2"/></svg>
@@ -221,52 +167,7 @@ export default function Dashboard() {
         </motion.aside>
       </div>
 
-      {/* Lower Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          "Recent Baana Arrivals",
-          "Recent Beam Arrivals",
-          "Recent Expenses",
-        ].map((title, idx) => (
-          <motion.section
-            key={title}
-            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-            variants={fadeIn}
-            initial="hidden"
-            animate="show"
-            transition={{ delay: idx * 0.05 }}
-          >
-            <h4 className="font-semibold text-slate-800">{title}</h4>
-            <div className="mt-3 space-y-2 text-sm text-slate-600">
-              <div className="rounded-md border border-teal-100 bg-teal-50 p-2">—</div>
-              <div className="rounded-md border border-teal-100 bg-teal-50 p-2">—</div>
-            </div>
-          </motion.section>
-        ))}
-      </div>
-
-      {/* Performance Section */}
-      <motion.section
-        className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm"
-        variants={fadeIn}
-        initial="hidden"
-        animate="show"
-      >
-        <h3 className="text-base font-semibold text-slate-800">Performance</h3>
-        <div className="mt-4 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {["Weekly Expenses","Max Baana/Beam Arrivals","Other KPIs"].map((title, i) => (
-            <motion.div
-              key={title}
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.07 }}
-              className="rounded-lg border border-teal-100 bg-gradient-to-br from-white to-teal-50 p-4 text-sm text-slate-600 h-40"
-            >
-              {title} (placeholder)
-            </motion.div>
-          ))}
-        </div>
-      </motion.section>
+      {/* Removed placeholder lower grid & performance sections as requested */}
     </div>
   );
 }

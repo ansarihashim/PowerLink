@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { motion } from 'framer-motion';
 import Button from '../components/ui/Button.jsx';
 
-// Simple password validation: >=6 chars, at least one lowercase, one uppercase, one special/non-alphanumeric char
+// Registration password rule: >=6 chars, at least one lowercase, one uppercase, one special/non-alphanumeric char
 const passwordRule = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}$/;
 
 export default function Login() {
@@ -18,14 +18,16 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const validPassword = passwordRule.test(password);
+  const validPassword = mode === 'login' ? password.length > 0 : passwordRule.test(password);
 
   const onSubmit = async (e) => {
     e.preventDefault();
     setError('');
     if (!email) return setError('Email is required');
     if (mode === 'register' && !name.trim()) return setError('Name is required');
-    if (!validPassword) return setError('Password must be 6+ chars, include lowercase, uppercase & a special character');
+    if (mode === 'register' && !validPassword) {
+      return setError('Password must be 6+ chars, include lowercase, uppercase & a special character');
+    }
     try {
       setLoading(true);
       if (mode === 'login') {
@@ -83,7 +85,9 @@ export default function Login() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-slate-600 flex items-center justify-between">Password
-              <span className={`text-[10px] tracking-wide ${password.length===0 ? 'text-slate-400' : validPassword ? 'text-teal-600' : 'text-rose-600'}`}>{validPassword ? 'Strong' : 'Needs: 6+, Aa & special'}</span>
+              {mode === 'register' && (
+                <span className={`text-[10px] tracking-wide ${password.length===0 ? 'text-slate-400' : validPassword ? 'text-teal-600' : 'text-rose-600'}`}>{validPassword ? 'Strong' : 'Needs: 6+, Aa & special'}</span>
+              )}
             </label>
             <div className="relative group">
               <input
@@ -124,9 +128,11 @@ export default function Login() {
           )}
         </div>
 
-        <div className="mt-4 text-[10px] text-slate-400 text-center">
-          Password must be at least 6 chars, include uppercase, lowercase & a special character.
-        </div>
+          {mode === 'register' && (
+            <div className="mt-4 text-[10px] text-slate-400 text-center">
+              Password must be at least 6 chars, include uppercase, lowercase & a special character.
+            </div>
+          )}
       </motion.div>
 
       <div className="mt-8 text-xs text-white/70">

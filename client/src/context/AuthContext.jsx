@@ -12,13 +12,11 @@ export function AuthProvider({ children }) {
     let alive = true;
     (async () => {
       try {
-        // Attempt silent refresh to obtain access token (if refresh cookie exists)
         const rt = await api.auth.refresh().catch(() => null);
-        if (rt?.accessToken) setAccessToken(rt.accessToken);
-        // Only call /me if we have (or just received) an access token
-        if (accessToken || rt?.accessToken) {
-          const me = await api.auth.me();
-          if (alive) setUser(me.user || me);
+        if (rt?.accessToken) {
+          setAccessToken(rt.accessToken);
+          const me = await api.auth.me().catch(()=>null);
+          if (alive && me) setUser(me.user || me);
         }
       } catch (_) {
         if (alive) setUser(null);
@@ -30,22 +28,35 @@ export function AuthProvider({ children }) {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = useCallback(async ({ email, password }) => {
-    const r = await api.auth.login(email, password);
-    if (r.accessToken) setAccessToken(r.accessToken);
-    // Response already contains user (per backend controller)
-    if (r.user) setUser(r.user); else {
-      // fallback fetch
-      const me = await api.auth.me().catch(()=>null);
-      setUser(me?.user || me);
+    try {
+      const r = await api.auth.login(email, password);
+      if (r.accessToken) setAccessToken(r.accessToken);
+      if (r.user) setUser(r.user); else {
+        const me = await api.auth.me().catch(()=>null);
+        setUser(me?.user || me);
+      }
+    } catch (err) {
+      // rethrow with clearer message
+      if (/Invalid credentials/i.test(err.message)) {
+        throw new Error('Invalid email or password');
+      }
+      throw err;
     }
   }, []);
 
   const register = useCallback( async ({ name, email, password }) => {
-    const r = await api.auth.register(name, email, password);
-    if (r.accessToken) setAccessToken(r.accessToken);
-    if (r.user) setUser(r.user); else {
-      const me = await api.auth.me().catch(()=>null);
-      setUser(me?.user || me);
+    try {
+      const r = await api.auth.register(name, email, password);
+      if (r.accessToken) setAccessToken(r.accessToken);
+      if (r.user) setUser(r.user); else {
+        const me = await api.auth.me().catch(()=>null);
+        setUser(me?.user || me);
+      }
+    } catch (err) {
+      if (/Email already registered/i.test(err.message)) {
+        throw new Error('Email already in use');
+      }
+      throw err;
     }
   }, []);
 
@@ -55,7 +66,11 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
-  return <AuthCtx.Provider value={{ user, loading, login, register, logout }}>{children}</AuthCtx.Provider>;
+  const updateUser = useCallback((patch) => {
+    setUser(u => u ? { ...u, ...patch } : u);
+  }, []);
+
+  return <AuthCtx.Provider value={{ user, loading, login, register, logout, updateUser }}>{children}</AuthCtx.Provider>;
 }
 
 export function useAuth() { return useContext(AuthCtx); }

@@ -107,6 +107,13 @@ export const api = {
     update: (id, data) => request(`/beam/${id}`, { method: 'PUT', body: data }),
     remove: (id) => request(`/beam/${id}`, { method: 'DELETE' })
   },
+  stats: {
+    summary: (params = {}) => {
+      const q = new URLSearchParams();
+      Object.entries(params).forEach(([k,v]) => { if (v !== undefined && v !== null && v !== '') q.append(k, v); });
+      return request(`/stats/summary?${q.toString()}`);
+    }
+  },
   // Profile and security endpoints
   updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: data }),
   updateAvatar: (avatarDataUrl) => request('/auth/profile', { method: 'PUT', body: { avatar: avatarDataUrl } }),

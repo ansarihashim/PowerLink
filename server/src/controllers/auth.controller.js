@@ -108,7 +108,13 @@ export async function updateProfile(req, res) {
   try {
     const update = {};
     if (name !== undefined) update.name = name.trim();
-    if (avatar !== undefined) update.avatar = avatar || undefined;
+    if (avatar !== undefined) {
+      if (avatar === '' || avatar === null) {
+        update.$unset = { ...(update.$unset||{}), avatar: 1 };
+      } else {
+        update.avatar = avatar; // data URL
+      }
+    }
     const user = await User.findByIdAndUpdate(req.user.sub, update, { new: true });
     if (!user) return error(res, 'User not found', 'NOT_FOUND', 404);
     return ok(res, { user: sanitizeUser(user) });
@@ -161,7 +167,7 @@ function sanitizeUser(user) {
     createdAt: user.createdAt,
     lastLogin: user.lastLogin,
     lastPasswordChange: user.lastPasswordChange,
-    avatar: user.avatar,
+  avatar: user.avatar || null,
   // 2FA removed
   };
 }

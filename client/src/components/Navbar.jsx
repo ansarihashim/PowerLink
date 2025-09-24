@@ -3,15 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import api from "../api/http.js";
 import { useToast } from "./ui/ToastProvider.jsx";
+import ConfirmDialog from "./ui/ConfirmDialog.jsx";
 
 export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" }) {
   // Control for the profile dropdown (click-only)
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const { push } = useToast();
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
 
   const handleLogout = async () => {
     if (confirm("Are you sure you want to logout?")) {
@@ -125,9 +127,10 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
                         const reader = new FileReader();
                         reader.onload = async () => {
                           try {
-                            await api.updateProfile({ avatar: reader.result });
+                            const resp = await api.updateProfile({ avatar: reader.result });
+                            const newAvatar = resp.user?.avatar || reader.result;
+                            updateUser({ avatar: newAvatar });
                             push({ type: 'success', title: 'Avatar Updated', message: 'Profile picture changed.' });
-                            window.location.reload();
                           } catch (err) {
                             push({ type: 'error', title: 'Upload Failed', message: err.message });
                           } finally { setAvatarBusy(false); e.target.value = ''; }
@@ -143,17 +146,8 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
                 </label>
                 {user?.avatar && (
                   <button
-                    onClick={async () => {
-                      if (!confirm('Remove profile picture?')) return;
-                      try {
-                        await api.updateProfile({ avatar: '' });
-                        push({ type: 'success', title: 'Removed', message: 'Avatar removed.' });
-                        window.location.reload();
-                      } catch (err) {
-                        push({ type: 'error', title: 'Failed', message: err.message });
-                      }
-                    }}
-                    className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition"
+                    onClick={() => setShowRemove(true)}
+                    className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-rose-700 hover:bg-rose-50 hover:text-rose-800 transition"
                   >
                     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" strokeWidth="1.5"/></svg>
                     Remove Picture
@@ -179,6 +173,27 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
           </div>
         </div>
         </div>
+        <ConfirmDialog
+          open={showRemove}
+          title="Remove profile picture?"
+          message="This will clear your current avatar. You can upload a new one anytime."
+            confirmLabel={avatarBusy ? 'Removing...' : 'Remove'}
+          tone="danger"
+          onCancel={() => { if(!avatarBusy) setShowRemove(false); }}
+          onConfirm={async () => {
+            if (avatarBusy) return; setAvatarBusy(true);
+            const prev = user?.avatar; updateUser({ avatar: '' });
+            try {
+              const resp = await api.updateProfile({ avatar: '' });
+              updateUser({ avatar: resp.user?.avatar || '' });
+              push({ type: 'success', title: 'Profile Picture Removed', message: 'Your avatar has been cleared.' });
+              setShowRemove(false);
+            } catch (err) {
+              updateUser({ avatar: prev });
+              push({ type: 'error', title: 'Removal Failed', message: err.message });
+            } finally { setAvatarBusy(false); }
+          }}
+        />
       </div>
     </header>
   );
