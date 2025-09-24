@@ -32,6 +32,8 @@ export default function AddExpense() {
       await api.expenses.create({ category: form.category, amount: Number(form.amount), date: form.date });
       setSuccess('Expense saved');
       setForm({ category: 'tea', amount: '', date: '' });
+      // trigger chart refresh listeners
+      window.dispatchEvent(new Event('expenses:changed'));
     } catch (err) { setError(err.message); }
     finally { setSubmitting(false); }
   };

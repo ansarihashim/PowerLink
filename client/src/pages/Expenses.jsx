@@ -168,7 +168,11 @@ function ExpenseRow({ expense, idx }) {
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
   });
   const deleting = mutation.isPending;
-  const onDelete = () => mutation.mutate();
+  const onDelete = () => mutation.mutate(undefined, {
+    onSuccess: () => {
+      window.dispatchEvent(new Event('expenses:changed'));
+    }
+  });
   return (
     <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
       <td className="px-4 py-3">{expense.category}</td>

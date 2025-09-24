@@ -6,6 +6,7 @@ import { useMemo, useState, useEffect } from "react";
 import { api } from "../api/http.js";
 import { useNavigate } from "react-router-dom";
 import { formatDMY } from "../utils/date.js";
+import ExpenseComparisonChart from "../components/charts/ExpenseComparisonChart.jsx";
 
 const fadeIn = {
   hidden: { opacity: 0, y: 8 },
@@ -124,7 +125,10 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Main Grid */}
+  {/* Expense Comparison Chart */}
+  <ExpenseComparisonChart />
+
+  {/* Main Grid */}
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         {/* Recent Notifications */}
         <motion.section

@@ -85,7 +85,12 @@ export const api = {
     },
     create: (data) => request('/expenses', { method: 'POST', body: data }),
     update: (id, data) => request(`/expenses/${id}`, { method: 'PUT', body: data }),
-    remove: (id) => request(`/expenses/${id}`, { method: 'DELETE' })
+    remove: (id) => request(`/expenses/${id}`, { method: 'DELETE' }),
+    aggregate: (params = {}) => {
+      const q = new URLSearchParams();
+      Object.entries(params).forEach(([k,v]) => { if (v !== undefined && v !== null && v !== '') q.append(k, v); });
+      return request(`/expenses/aggregate?${q.toString()}`);
+    }
   }
   , baana: {
     list: (params = {}) => {
