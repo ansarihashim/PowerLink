@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { api } from "../../api/http.js";
+import { useAuth } from "../../context/AuthContext.jsx";
 import Button from "../ui/Button.jsx";
 import Modal from "../ui/Modal.jsx";
+import { useToast } from "../ui/ToastProvider.jsx";
 
 export default function ChangePasswordModal({ isOpen, onClose }) {
+  const { logout } = useAuth();
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -12,17 +15,20 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
   });
   const [errors, setErrors] = useState({});
 
+  const { push } = useToast();
   const changePasswordMutation = useMutation({
-    mutationFn: ({ currentPassword, newPassword }) => 
-      api.auth.changePassword(currentPassword, newPassword),
+    mutationFn: ({ currentPassword, newPassword }) => api.changePassword({ currentPassword, newPassword }),
     onSuccess: () => {
       setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
       setErrors({});
-      alert("Password changed successfully! Please log in again with your new password.");
+      push({ type: 'success', title: 'Password Changed', message: 'For security you will be logged out now.' });
+      // Force logout so tokens (invalidated server-side) are cleared
+      logout();
       onClose();
     },
     onError: (error) => {
       setErrors({ submit: error.message });
+      push({ type: 'error', title: 'Change Failed', message: error.message || 'Could not change password.' });
     }
   });
 

@@ -118,7 +118,7 @@ export default function Loans() {
             {isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
             {error && !isLoading && <tr><td colSpan={5} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
             {!isLoading && !error && rows.length === 0 && <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-500">No loans</td></tr>}
-            {!loading && !error && rows.map((l, idx) => (
+            {!isLoading && !error && rows.map((l, idx) => (
               <LoanRow key={l.id} loan={l} idx={idx} />
             ))}
           </tbody>

@@ -22,6 +22,7 @@ import PayInstallment from "./pages/PayInstallment.jsx";
 import Login from "./pages/Login.jsx";
 import Profile from "./pages/Profile.jsx";
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { ToastProvider } from './components/ui/ToastProvider.jsx';
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -49,12 +50,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <RouteAwareLayout
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
-        />
+        <ToastProvider>
+          <RouteAwareLayout
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+          />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

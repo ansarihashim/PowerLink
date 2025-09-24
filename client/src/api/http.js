@@ -41,7 +41,8 @@ export const api = {
     login: (email, password) => request('/auth/login', { method: 'POST', body: { email, password } }),
     register: (name, email, password) => request('/auth/register', { method: 'POST', body: { name, email, password } }),
     me: () => request('/auth/me'),
-    logout: () => request('/auth/logout', { method: 'POST' })
+    logout: () => request('/auth/logout', { method: 'POST' }),
+    refresh: () => request('/auth/refresh', { method: 'POST' })
   },
   workers: {
     list: (params = {}) => {
@@ -109,9 +110,7 @@ export const api = {
   // Profile and security endpoints
   updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: data }),
   changePassword: (data) => request('/auth/change-password', { method: 'POST', body: data }),
-  enable2FA: () => request('/auth/2fa/enable', { method: 'POST' }),
-  verify2FA: (data) => request('/auth/2fa/verify', { method: 'POST', body: data }),
-  disable2FA: (data) => request('/auth/2fa/disable', { method: 'POST', body: data })
+  // 2FA endpoints removed per requirement
 };
 
 export default api;

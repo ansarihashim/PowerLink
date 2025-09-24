@@ -6,10 +6,7 @@ import {
   logout, 
   me, 
   updateProfile, 
-  changePassword, 
-  enable2FA, 
-  verify2FA, 
-  disable2FA 
+  changePassword
 } from '../controllers/auth.controller.js';
 import { requireAuth } from '../middlewares/auth.js';
 
@@ -22,8 +19,6 @@ router.post('/logout', logout);
 router.get('/me', requireAuth, me);
 router.put('/profile', requireAuth, updateProfile);
 router.post('/change-password', requireAuth, changePassword);
-router.post('/2fa/enable', requireAuth, enable2FA);
-router.post('/2fa/verify', requireAuth, verify2FA);
-router.post('/2fa/disable', requireAuth, disable2FA);
+// 2FA routes removed
 
 export default router;

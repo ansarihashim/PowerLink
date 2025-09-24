@@ -104,7 +104,7 @@ export default function Installments() {
             {isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
             {error && !isLoading && <tr><td colSpan={4} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
             {!isLoading && !error && rows.length === 0 && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">No installments</td></tr>}
-            {!loading && !error && rows.map((i, idx) => (
+            {!isLoading && !error && rows.map((i, idx) => (
               <InstallmentRow key={i.id} inst={i} idx={idx} />
             ))}
           </tbody>

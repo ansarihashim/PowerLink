@@ -4,15 +4,15 @@ import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import ChangePasswordModal from "../components/profile/ChangePasswordModal.jsx";
-import TwoFactorModal from "../components/profile/TwoFactorModal.jsx";
 import api from "../api/http.js";
+import { useToast } from "../components/ui/ToastProvider.jsx";
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  // 2FA removed per request
   
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -26,20 +26,29 @@ export default function Profile() {
     }
   }, [user]);
 
+  const { push } = useToast();
   const updateProfileMutation = useMutation({
     mutationFn: api.updateProfile,
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+      // Optimistically update local auth cache
+      queryClient.setQueryData(['auth','me'], (old) => {
+        if (!old) return old;
+        const userData = old.user || old;
+        const updated = { ...userData, name: data.user?.name || data.name || profileForm.name };
+        if (old.user) return { ...old, user: updated };
+        return updated;
+      });
+      push({ type: 'success', title: 'Profile Updated', message: 'Your changes have been saved.' });
     },
     onError: (error) => {
-      alert(error.response?.message || 'Failed to update profile');
+      push({ type: 'error', title: 'Update Failed', message: error.message || 'Could not update profile.' });
     }
   });
 
   const handleProfileSubmit = (e) => {
     e.preventDefault();
     if (profileForm.name.trim().length < 1 || profileForm.name.trim().length > 100) {
-      alert('Name must be between 1 and 100 characters');
+      push({ type: 'warning', title: 'Invalid Name', message: 'Name must be 1-100 characters long.' });
       return;
     }
     updateProfileMutation.mutate({ name: profileForm.name.trim() });
@@ -149,11 +158,14 @@ export default function Profile() {
                   readOnly
                 />
               </div>
-              <Button 
-                type="submit" 
-                className="w-full bg-teal-600 hover:bg-teal-700 text-white transition-colors duration-200" 
+              <Button
+                type="submit"
+                className="relative w-full bg-teal-600 hover:bg-teal-700 text-white transition-colors duration-200 disabled:opacity-70"
                 disabled={updateProfileMutation.isPending}
               >
+                {updateProfileMutation.isPending && (
+                  <span className="absolute left-3 inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                )}
                 {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </form>
@@ -205,30 +217,7 @@ export default function Profile() {
               </div>
             </div>
             
-            <div className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors duration-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h5 className="font-medium text-slate-900">Two-Factor Authentication</h5>
-                  <p className="text-sm text-slate-600">
-                    {user.twoFactorEnabled 
-                      ? 'Two-factor authentication is enabled' 
-                      : 'Add an extra layer of security to your account'
-                    }
-                  </p>
-                </div>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowTwoFactorModal(true)}
-                  className={`transition-colors duration-200 ${
-                    user.twoFactorEnabled
-                      ? 'border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400'
-                      : 'border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400'
-                  }`}
-                >
-                  {user.twoFactorEnabled ? 'Manage 2FA' : 'Enable 2FA'}
-                </Button>
-              </div>
-            </div>
+            {/* Two-Factor Authentication removed */}
 
             <div className="border border-rose-200 rounded-lg p-4 bg-rose-50 hover:bg-rose-100 transition-colors duration-200">
               <div className="flex items-center justify-between">
@@ -254,10 +243,7 @@ export default function Profile() {
         isOpen={showPasswordModal} 
         onClose={() => setShowPasswordModal(false)} 
       />
-      <TwoFactorModal 
-        isOpen={showTwoFactorModal} 
-        onClose={() => setShowTwoFactorModal(false)} 
-      />
+      {/* 2FA modal removed */}
     </div>
   );
 }
