@@ -6,6 +6,7 @@ const UserSchema = new mongoose.Schema({
   passwordHash: { type: String, required: true },
   role: { type: String, enum: ['admin','manager','viewer'], default: 'viewer' },
   tokenVersion: { type: Number, default: 0 },
+  avatar: { type: String },
   // 2FA removed
   // Security tracking
   lastLogin: { type: Date, default: Date.now },

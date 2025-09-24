@@ -6,6 +6,7 @@ import Button from "../components/ui/Button.jsx";
 import ChangePasswordModal from "../components/profile/ChangePasswordModal.jsx";
 import api from "../api/http.js";
 import { useToast } from "../components/ui/ToastProvider.jsx";
+import { prepareAvatar } from "../utils/image.js";
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -14,16 +15,17 @@ export default function Profile() {
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   // 2FA removed per request
   
-  // Profile form state
-  const [profileForm, setProfileForm] = useState({
-    name: user?.name || ''
-  });
+  // Profile form & avatar state
+  const [profileForm, setProfileForm] = useState({ name: user?.name || '' });
+  const [avatarPreview, setAvatarPreview] = useState(user?.avatar || null);
+  const [avatarDirty, setAvatarDirty] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
 
   // Update form when user data changes
   useEffect(() => {
-    if (user?.name) {
-      setProfileForm(prev => ({ ...prev, name: user.name }));
-    }
+    if (user?.name) setProfileForm(prev => ({ ...prev, name: user.name }));
+    if (user?.avatar) setAvatarPreview(user.avatar);
   }, [user]);
 
   const { push } = useToast();
@@ -34,7 +36,7 @@ export default function Profile() {
       queryClient.setQueryData(['auth','me'], (old) => {
         if (!old) return old;
         const userData = old.user || old;
-        const updated = { ...userData, name: data.user?.name || data.name || profileForm.name };
+        const updated = { ...userData, name: data.user?.name || data.name || profileForm.name, avatar: data.user?.avatar || data.avatar || userData.avatar };
         if (old.user) return { ...old, user: updated };
         return updated;
       });
@@ -52,6 +54,36 @@ export default function Profile() {
       return;
     }
     updateProfileMutation.mutate({ name: profileForm.name.trim() });
+  };
+
+  const onAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarError(null);
+    try {
+      setAvatarUploading(true);
+      const dataUrl = await prepareAvatar(file);
+      setAvatarPreview(dataUrl);
+      setAvatarDirty(true);
+      // Auto-upload avatar when selected
+      const res = await api.updateProfile({ avatar: dataUrl });
+      queryClient.setQueryData(['auth','me'], (old) => {
+        if (!old) return old;
+        const userData = old.user || old;
+        const updated = { ...userData, avatar: res.user?.avatar || dataUrl };
+        if (old.user) return { ...old, user: updated };
+        return updated;
+      });
+      push({ type: 'success', title: 'Avatar Updated', message: 'Your profile picture has been saved.' });
+      setAvatarDirty(false);
+    } catch (err) {
+      setAvatarError(err.message || 'Failed to process image');
+      push({ type: 'error', title: 'Avatar Error', message: err.message || 'Could not update avatar.' });
+    } finally {
+      setAvatarUploading(false);
+      // reset file input value to allow re-selecting same file
+      e.target.value = '';
+    }
   };
 
   const handleLogout = async () => {
@@ -81,8 +113,30 @@ export default function Profile() {
       {/* Profile Header */}
       <Card className="p-6">
         <div className="flex items-center gap-4">
-          <div className="h-16 w-16 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-white text-2xl font-semibold flex items-center justify-center shadow-lg">
-            {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+          <div className="relative group">
+            {avatarPreview ? (
+              <img
+                src={avatarPreview}
+                alt="Avatar"
+                className="h-20 w-20 rounded-full object-cover ring-2 ring-teal-500/30 shadow-md"
+                draggable={false}
+              />
+            ) : (
+              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-white text-2xl font-semibold flex items-center justify-center shadow-lg select-none">
+                {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || 'U'}
+              </div>
+            )}
+            <label className="absolute bottom-0 right-0 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border border-teal-300 bg-white text-teal-600 shadow-sm hover:bg-teal-50 hover:text-teal-700 transition-colors">
+              <input type="file" accept="image/*" className="hidden" onChange={onAvatarChange} />
+              {avatarUploading ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-teal-500/30 border-t-teal-600" />
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-4 w-4">
+                  <path d="M4 3a2 2 0 00-2 2v9.5A2.5 2.5 0 004.5 17H9a1 1 0 100-2H4.5a.5.5 0 01-.5-.5V5a1 1 0 011-1h3.382a1 1 0 01.894.553l.724 1.447A2 2 0 0012.382 7H15a1 1 0 011 1v2a1 1 0 102 0V8a3 3 0 00-3-3h-2.618a1 1 0 01-.894-.553l-.724-1.447A2 2 0 008.382 2H5a2 2 0 00-2 2z" />
+                  <path d="M16.707 12.293a1 1 0 00-1.414 0L13 14.586V13a1 1 0 10-2 0v4a1 1 0 001 1h4a1 1 0 100-2h-1.586l2.293-2.293a1 1 0 000-1.414z" />
+                </svg>
+              )}
+            </label>
           </div>
           <div>
             <h3 className="text-lg font-semibold text-slate-900">{user.name || 'User'}</h3>
@@ -128,6 +182,9 @@ export default function Profile() {
           <Card className="p-6">
             <h4 className="text-lg font-medium text-slate-900 mb-4">Personal Information</h4>
             <form onSubmit={handleProfileSubmit} className="space-y-4">
+              {avatarError && (
+                <div className="rounded-md border border-rose-300 bg-rose-50 p-2 text-xs text-rose-700">{avatarError}</div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                 <input

@@ -87,19 +87,29 @@ export async function me(req, res) {
 
 // Update profile information
 export async function updateProfile(req, res) {
-  const { name } = req.body;
-  
-  if (!name || name.trim().length < 1 || name.trim().length > 100) {
-    return error(res, 'Name must be between 1 and 100 characters', 'VALIDATION_ERROR', 400);
+  const { name, avatar } = req.body;
+
+  if (name !== undefined) {
+    if (!name || name.trim().length < 1 || name.trim().length > 100) {
+      return error(res, 'Name must be between 1 and 100 characters', 'VALIDATION_ERROR', 400);
+    }
+  }
+  if (avatar !== undefined) {
+    // basic validation for data URL (client sends compressed jpeg)
+    if (avatar && typeof avatar === 'string' && !avatar.startsWith('data:image/')) {
+      return error(res, 'Invalid avatar format', 'VALIDATION_ERROR', 400);
+    }
+    // size guard (rough check by length ~ 4/3 of bytes)
+    if (avatar && avatar.length > 400_000) { // ~300KB encoded
+      return error(res, 'Avatar too large', 'VALIDATION_ERROR', 400);
+    }
   }
 
   try {
-    const user = await User.findByIdAndUpdate(
-      req.user.sub, 
-      { name: name.trim() }, 
-      { new: true }
-    );
-    
+    const update = {};
+    if (name !== undefined) update.name = name.trim();
+    if (avatar !== undefined) update.avatar = avatar || undefined;
+    const user = await User.findByIdAndUpdate(req.user.sub, update, { new: true });
     if (!user) return error(res, 'User not found', 'NOT_FOUND', 404);
     return ok(res, { user: sanitizeUser(user) });
   } catch (err) {
@@ -151,6 +161,7 @@ function sanitizeUser(user) {
     createdAt: user.createdAt,
     lastLogin: user.lastLogin,
     lastPasswordChange: user.lastPasswordChange,
+    avatar: user.avatar,
   // 2FA removed
   };
 }

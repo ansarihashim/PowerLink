@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import api from "../api/http.js";
+import { useToast } from "./ui/ToastProvider.jsx";
 
 export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" }) {
   // Control for the profile dropdown (click-only)
@@ -8,6 +10,8 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { push } = useToast();
+  const [avatarBusy, setAvatarBusy] = useState(false);
 
   const handleLogout = async () => {
     if (confirm("Are you sure you want to logout?")) {
@@ -64,15 +68,20 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
           <button
             className="relative rounded-full p-2 text-white hover:bg-white/10 transition-all duration-200"
             aria-label="Notifications"
+            onClick={() => navigate('/notifications')}
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V4a2 2 0 10-4 0v1.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5" strokeWidth="1.5"/></svg>
           </button>
           {/* Profile + dropdown (click on arrow only) */}
           <div className="relative" ref={menuRef}>
             <div className="flex items-center gap-2 select-none">
-              <div className="h-8 w-8 rounded-full bg-white/20 text-white grid place-items-center text-sm shadow">
-                {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
-              </div>
+              {user?.avatar ? (
+                <img src={user.avatar} alt="avatar" className="h-9 w-9 rounded-full object-cover ring-2 ring-white/30 shadow" />
+              ) : (
+                <div className="h-9 w-9 rounded-full bg-white/20 text-white grid place-items-center text-sm shadow">
+                  {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                </div>
+              )}
               <div className="hidden sm:block text-sm">
                 <div className="font-medium">{user?.name || 'User'}</div>
                 <div className="text-white/80">{user?.role || 'Member'}</div>
@@ -90,7 +99,66 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
             </div>
             {/* Dropdown */}
             {menuOpen && (
-              <div role="menu" className="transition-all duration-200 absolute right-0 mt-2 w-44 rounded-lg border border-white/20 bg-white/95 backdrop-blur p-2 shadow-lg">
+              <div role="menu" className="transition-all duration-200 absolute right-0 mt-2 w-52 rounded-lg border border-white/20 bg-white/95 backdrop-blur p-2 shadow-lg">
+                <div className="px-3 py-2 flex items-center gap-3 border-b border-slate-200/60">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt="avatar" className="h-10 w-10 rounded-full object-cover ring-2 ring-teal-500/30" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-white grid place-items-center text-sm font-semibold">
+                      {user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                    </div>
+                  )}
+                  <div className="text-xs">
+                    <div className="font-semibold text-slate-800 truncate max-w-[120px]">{user?.name || 'User'}</div>
+                    <div className="text-slate-500 truncate max-w-[120px]">{user?.email}</div>
+                  </div>
+                </div>
+                <label className="mt-2 flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-xs text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return; setAvatarBusy(true);
+                      try {
+                        const reader = new FileReader();
+                        reader.onload = async () => {
+                          try {
+                            await api.updateProfile({ avatar: reader.result });
+                            push({ type: 'success', title: 'Avatar Updated', message: 'Profile picture changed.' });
+                            window.location.reload();
+                          } catch (err) {
+                            push({ type: 'error', title: 'Upload Failed', message: err.message });
+                          } finally { setAvatarBusy(false); e.target.value = ''; }
+                        };
+                        reader.readAsDataURL(file);
+                      } catch (err) {
+                        setAvatarBusy(false);
+                      }
+                    }}
+                  />
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 15l-3.5 2.1 1-4.1L7 9.9l4.2-.4L12 6l1.8 3.5 4.2.4-2.5 3.1 1 4.1z" strokeWidth="1.3"/></svg>
+                  <span className="flex-1">{avatarBusy ? 'Uploading...' : 'Change Picture'}</span>
+                </label>
+                {user?.avatar && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm('Remove profile picture?')) return;
+                      try {
+                        await api.updateProfile({ avatar: '' });
+                        push({ type: 'success', title: 'Removed', message: 'Avatar removed.' });
+                        window.location.reload();
+                      } catch (err) {
+                        push({ type: 'error', title: 'Failed', message: err.message });
+                      }
+                    }}
+                    className="mt-1 flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 6l12 12M6 18L18 6" strokeWidth="1.5"/></svg>
+                    Remove Picture
+                  </button>
+                )}
                 <button 
                   onClick={handleProfileClick}
                   className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 hover:shadow-md hover:shadow-teal-200/50 transition-all duration-200"

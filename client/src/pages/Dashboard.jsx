@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import { useMemo, useState } from "react";
@@ -18,6 +19,7 @@ const fadeIn = {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [from, setFrom] = useState(""); // yyyy-MM-dd
   const [to, setTo] = useState("");
 
@@ -115,7 +117,7 @@ export default function Dashboard() {
       >
         {/* subtle wave/pattern accents */}
         <div className="pointer-events-none absolute inset-0 opacity-30 [background:radial-gradient(120px_60px_at_20%_0%,rgba(255,255,255,0.35),rgba(255,255,255,0)_60%),radial-gradient(160px_80px_at_70%_0%,rgba(255,255,255,0.25),rgba(255,255,255,0)_60%)]" />
-        <h2 className="text-2xl font-semibold tracking-tight">Welcome back, Admin!</h2>
+  <h2 className="text-2xl font-semibold tracking-tight">Welcome back, {user?.name || 'there'}!</h2>
         <p className="text-white/90">Here’s a snapshot of your powerloom network.</p>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="text-xs text-white/90">Filtered by: <span className="font-medium">{rangeCaption}</span></div>

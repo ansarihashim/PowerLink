@@ -109,6 +109,7 @@ export const api = {
   },
   // Profile and security endpoints
   updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: data }),
+  updateAvatar: (avatarDataUrl) => request('/auth/profile', { method: 'PUT', body: { avatar: avatarDataUrl } }),
   changePassword: (data) => request('/auth/change-password', { method: 'POST', body: data }),
   // 2FA endpoints removed per requirement
 };
