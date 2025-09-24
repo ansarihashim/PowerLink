@@ -1,11 +1,49 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
+import ChangePasswordModal from "../components/profile/ChangePasswordModal.jsx";
+import TwoFactorModal from "../components/profile/TwoFactorModal.jsx";
+import api from "../api/http.js";
 
 export default function Profile() {
   const { user, logout } = useAuth();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showTwoFactorModal, setShowTwoFactorModal] = useState(false);
+  
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || ''
+  });
+
+  // Update form when user data changes
+  useEffect(() => {
+    if (user?.name) {
+      setProfileForm(prev => ({ ...prev, name: user.name }));
+    }
+  }, [user]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: api.updateProfile,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+    onError: (error) => {
+      alert(error.response?.message || 'Failed to update profile');
+    }
+  });
+
+  const handleProfileSubmit = (e) => {
+    e.preventDefault();
+    if (profileForm.name.trim().length < 1 || profileForm.name.trim().length > 100) {
+      alert('Name must be between 1 and 100 characters');
+      return;
+    }
+    updateProfileMutation.mutate({ name: profileForm.name.trim() });
+  };
 
   const handleLogout = async () => {
     if (confirm("Are you sure you want to logout?")) {
@@ -57,13 +95,12 @@ export default function Profile() {
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'profile', label: 'Profile Information', icon: '👤' },
-            { id: 'security', label: 'Security', icon: '🔒' },
-            { id: 'preferences', label: 'Preferences', icon: '⚙️' }
+            { id: 'security', label: 'Security', icon: '🔒' }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap transition-colors duration-200 ${
                 activeTab === tab.id
                   ? 'border-teal-500 text-teal-600'
                   : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
@@ -81,15 +118,16 @@ export default function Profile() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="p-6">
             <h4 className="text-lg font-medium text-slate-900 mb-4">Personal Information</h4>
-            <div className="space-y-4">
+            <form onSubmit={handleProfileSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
                 <input
                   type="text"
-                  value={user.name || ''}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-colors duration-200"
                   placeholder="Enter your full name"
-                  readOnly
+                  disabled={updateProfileMutation.isPending}
                 />
               </div>
               <div>
@@ -111,10 +149,14 @@ export default function Profile() {
                   readOnly
                 />
               </div>
-              <Button className="w-full" disabled>
-                Save Changes (Coming Soon)
+              <Button 
+                type="submit" 
+                className="w-full bg-teal-600 hover:bg-teal-700 text-white transition-colors duration-200" 
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
-            </div>
+            </form>
           </Card>
 
           <Card className="p-6">
@@ -147,37 +189,58 @@ export default function Profile() {
         <Card className="p-6">
           <h4 className="text-lg font-medium text-slate-900 mb-4">Security Settings</h4>
           <div className="space-y-6">
-            <div className="border border-slate-200 rounded-lg p-4">
+            <div className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
                   <h5 className="font-medium text-slate-900">Password</h5>
                   <p className="text-sm text-slate-600">Change your account password</p>
                 </div>
-                <Button variant="outline" disabled>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowPasswordModal(true)}
+                  className="border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400 transition-colors duration-200"
+                >
                   Change Password
                 </Button>
               </div>
             </div>
             
-            <div className="border border-slate-200 rounded-lg p-4">
+            <div className="border border-slate-200 rounded-lg p-4 hover:border-slate-300 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
                   <h5 className="font-medium text-slate-900">Two-Factor Authentication</h5>
-                  <p className="text-sm text-slate-600">Add an extra layer of security to your account</p>
+                  <p className="text-sm text-slate-600">
+                    {user.twoFactorEnabled 
+                      ? 'Two-factor authentication is enabled' 
+                      : 'Add an extra layer of security to your account'
+                    }
+                  </p>
                 </div>
-                <Button variant="outline" disabled>
-                  Enable 2FA
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTwoFactorModal(true)}
+                  className={`transition-colors duration-200 ${
+                    user.twoFactorEnabled
+                      ? 'border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400'
+                      : 'border-teal-300 text-teal-700 hover:bg-teal-50 hover:border-teal-400'
+                  }`}
+                >
+                  {user.twoFactorEnabled ? 'Manage 2FA' : 'Enable 2FA'}
                 </Button>
               </div>
             </div>
 
-            <div className="border border-rose-200 rounded-lg p-4 bg-rose-50">
+            <div className="border border-rose-200 rounded-lg p-4 bg-rose-50 hover:bg-rose-100 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div>
                   <h5 className="font-medium text-rose-900">Logout from all devices</h5>
                   <p className="text-sm text-rose-700">Sign out from all browsers and devices</p>
                 </div>
-                <Button variant="outline" className="border-rose-300 text-rose-700 hover:bg-rose-100" onClick={handleLogout}>
+                <Button 
+                  variant="outline" 
+                  className="border-rose-300 text-rose-700 hover:bg-rose-200 hover:border-rose-400 transition-colors duration-200" 
+                  onClick={handleLogout}
+                >
                   Logout All
                 </Button>
               </div>
@@ -186,47 +249,15 @@ export default function Profile() {
         </Card>
       )}
 
-      {activeTab === 'preferences' && (
-        <Card className="p-6">
-          <h4 className="text-lg font-medium text-slate-900 mb-4">Application Preferences</h4>
-          <div className="space-y-6">
-            <div className="flex items-center justify-between py-3 border-b border-slate-100">
-              <div>
-                <h5 className="font-medium text-slate-900">Theme</h5>
-                <p className="text-sm text-slate-600">Choose your preferred theme</p>
-              </div>
-              <select className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" disabled>
-                <option>Light</option>
-                <option>Dark</option>
-                <option>Auto</option>
-              </select>
-            </div>
-            
-            <div className="flex items-center justify-between py-3 border-b border-slate-100">
-              <div>
-                <h5 className="font-medium text-slate-900">Language</h5>
-                <p className="text-sm text-slate-600">Select your preferred language</p>
-              </div>
-              <select className="px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500" disabled>
-                <option>English</option>
-                <option>Hindi</option>
-                <option>Gujarati</option>
-              </select>
-            </div>
-            
-            <div className="flex items-center justify-between py-3">
-              <div>
-                <h5 className="font-medium text-slate-900">Email Notifications</h5>
-                <p className="text-sm text-slate-600">Receive email updates about your account</p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" className="sr-only peer" defaultChecked disabled />
-                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
-              </label>
-            </div>
-          </div>
-        </Card>
-      )}
+      {/* Modals */}
+      <ChangePasswordModal 
+        isOpen={showPasswordModal} 
+        onClose={() => setShowPasswordModal(false)} 
+      />
+      <TwoFactorModal 
+        isOpen={showTwoFactorModal} 
+        onClose={() => setShowTwoFactorModal(false)} 
+      />
     </div>
   );
 }

@@ -105,7 +105,13 @@ export const api = {
     create: (data) => request('/beam', { method: 'POST', body: data }),
     update: (id, data) => request(`/beam/${id}`, { method: 'PUT', body: data }),
     remove: (id) => request(`/beam/${id}`, { method: 'DELETE' })
-  }
+  },
+  // Profile and security endpoints
+  updateProfile: (data) => request('/auth/profile', { method: 'PUT', body: data }),
+  changePassword: (data) => request('/auth/change-password', { method: 'POST', body: data }),
+  enable2FA: () => request('/auth/2fa/enable', { method: 'POST' }),
+  verify2FA: (data) => request('/auth/2fa/verify', { method: 'POST', body: data }),
+  disable2FA: (data) => request('/auth/2fa/disable', { method: 'POST', body: data })
 };
 
 export default api;
