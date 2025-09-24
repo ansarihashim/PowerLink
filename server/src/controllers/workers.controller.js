@@ -113,6 +113,7 @@ export async function updateWorker(req, res) {
 export async function deleteWorker(req, res) {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return error(res, 'Invalid id', 'INVALID_ID', 400);
+    // Using schema middleware cascade (pre findOneAndDelete)
     const worker = await Worker.findByIdAndDelete(req.params.id);
     if (!worker) return error(res, 'Worker not found', 'NOT_FOUND', 404);
     return res.status(204).send();

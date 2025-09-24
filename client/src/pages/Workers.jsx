@@ -82,7 +82,11 @@ export default function Workers() {
     setSaving(true);
     try {
       const payload = { ...editForm };
+      // Front-end validation to avoid 400 (Missing fields)
       if (!payload.name.trim()) throw new Error('Name required');
+      if (!payload.phone.trim()) throw new Error('Phone required');
+      if (!payload.address.trim()) throw new Error('Address required');
+      if (!payload.joiningDate) throw new Error('Joining date required');
       if(editing === 'new') {
         await api.workers.create(payload);
         push({ type: 'success', title: 'Worker Added', message: 'New worker created.' });
@@ -93,7 +97,8 @@ export default function Workers() {
       setEditing(null); setSaving(false);
       setRefreshTick(t=>t+1);
     } catch(err){
-      push({ type: 'error', title: 'Save Failed', message: err.message || 'Operation failed.' });
+      const msg = err?.message || 'Operation failed.';
+      push({ type: 'error', title: 'Save Failed', message: msg });
       setSaving(false);
     }
   }
