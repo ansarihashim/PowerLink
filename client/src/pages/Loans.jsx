@@ -12,6 +12,7 @@ import { downloadCSV } from "../utils/export.js";
 import Modal from "../components/ui/Modal.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
+import Select from "../components/ui/Select.jsx";
 
 export default function Loans() {
   const [searchParams] = useSearchParams();
@@ -44,10 +45,43 @@ export default function Loans() {
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const { push } = useToast();
+  // Create modal state
+  const [creating, setCreating] = useState(false);
+  const today = new Date().toISOString().slice(0,10);
+  const [createForm, setCreateForm] = useState({ workerId: '', amount: '', loanDate: today, notes: '' });
+  const [createSaving, setCreateSaving] = useState(false);
+  const [workers, setWorkers] = useState([]);
 
   function openEdit(loan){
     setEditing(loan);
     setEditForm({ amount: loan.amount, loanDate: loan.loanDate?.slice(0,10) || '', notes: loan.notes || '' });
+  }
+
+  function openCreate(){
+    setCreating(true);
+    setCreateForm({ workerId: '', amount: '', loanDate: today, notes: '' });
+    // fetch workers (simple one-shot list)
+    api.workers.list({ page:1, pageSize:100, sortBy:'name', sortDir:'asc' })
+      .then(r => { setWorkers((r.data||[]).map(w => ({ id: w._id, name: w.name }))); })
+      .catch(e => { push({ type:'error', title:'Load Workers Failed', message: e.message }); });
+  }
+
+  async function saveCreate(e){
+    e.preventDefault(); if(createSaving) return;
+    try {
+      if(!createForm.workerId) throw new Error('Worker required');
+      if(!createForm.amount) throw new Error('Amount required');
+      if(!createForm.loanDate) throw new Error('Loan date required');
+      setCreateSaving(true);
+      const payload = { workerId: createForm.workerId, amount: Number(createForm.amount), loanDate: createForm.loanDate, notes: createForm.notes };
+      await api.loans.create(payload);
+      push({ type:'success', title:'Loan Added', message:'New loan created.' });
+      setCreating(false); setCreateSaving(false);
+      queryClient.invalidateQueries({ queryKey:['loans'] });
+    } catch(err){
+      push({ type:'error', title:'Create Failed', message: err.message });
+      setCreateSaving(false);
+    }
   }
 
   async function saveEdit(e){
@@ -152,7 +186,8 @@ export default function Loans() {
         </div>
       </Card>
       <Card className="overflow-x-auto">
-        <div className="flex items-center justify-end p-3">
+        <div className="flex items-center justify-end gap-2 p-3">
+          <Button onClick={openCreate} className="bg-teal-600 text-white hover:bg-teal-700">Add Loan</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
   <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -206,12 +241,44 @@ export default function Loans() {
       <ConfirmDialog
         open={!!deleteId}
         title="Delete loan?"
-        message="This action cannot be undone. Associated installments will remain but orphaned."
+        message="This will also delete all installments for this loan. This action cannot be undone."
         tone="danger"
         confirmLabel="Delete"
         onCancel={()=> setDeleteId(null)}
         onConfirm={confirmDelete}
       />
+
+      <Modal isOpen={creating} onClose={()=> !createSaving && setCreating(false)} title="Add Loan" size="sm">
+        {creating && (
+          <form onSubmit={saveCreate} className="space-y-4 text-sm">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Worker</label>
+              <Select
+                value={createForm.workerId}
+                onChange={(e)=> setCreateForm(f=>({...f,workerId:e.target.value}))}
+                options={workers.map(w => ({ value: w.id, label: w.name }))}
+                placeholder="Select worker"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Amount</label>
+              <input type="number" min={0} value={createForm.amount} onChange={e=>setCreateForm(f=>({...f,amount:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
+              <input type="date" value={createForm.loanDate} onChange={e=>setCreateForm(f=>({...f,loanDate:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
+              <textarea rows={3} value={createForm.notes} onChange={e=>setCreateForm(f=>({...f,notes:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={()=> !createSaving && setCreating(false)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button disabled={createSaving} className="rounded-md bg-teal-600 px-5 py-2 text-white text-sm font-medium shadow hover:bg-teal-700 disabled:opacity-60">{createSaving ? 'Saving...' : 'Add Loan'}</button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
