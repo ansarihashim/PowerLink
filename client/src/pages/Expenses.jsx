@@ -9,6 +9,9 @@ import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { downloadCSV } from "../utils/export.js";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Modal from "../components/ui/Modal.jsx";
+import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
+import { useToast } from "../components/ui/ToastProvider.jsx";
 
 export default function Expenses() {
   const [searchParams] = useSearchParams();
@@ -32,6 +35,15 @@ export default function Expenses() {
   });
   const rows = (data?.data || []).map(e => ({ ...e, id: e._id }));
   const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));
+  const { push } = useToast();
+
+  // Add/Edit state
+  const categories = ['tea','workshop','mistary','mukadam','maintenance','other'];
+  const [editing, setEditing] = useState(null); // expense object or null or 'new'
+  const [form, setForm] = useState({ category: 'tea', amount: '', date: '' });
+  const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
+
   const deleteMutation = useMutation({
     mutationFn: (id) => api.expenses.remove(id),
     onMutate: async (id) => {
@@ -46,6 +58,37 @@ export default function Expenses() {
     onError: (_e,_id,ctx) => ctx?.prev?.forEach(([k,v]) => queryClient.setQueryData(k, v)),
     onSettled: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
   });
+
+  function openAdd(){
+    setEditing('new');
+    setForm({ category: 'tea', amount: '', date: new Date().toISOString().slice(0,10) });
+  }
+  function openEdit(exp){
+    setEditing(exp);
+    setForm({ category: exp.category, amount: exp.amount, date: exp.date?.slice(0,10) || '' });
+  }
+  async function save(e){
+    e.preventDefault(); if(!editing) return; setSaving(true);
+    try {
+      const payload = { category: form.category, amount: Number(form.amount), date: form.date };
+      if(editing === 'new') {
+        await api.expenses.create(payload);
+        push({ type:'success', title:'Expense Added', message:'New expense created.' });
+      } else {
+        await api.expenses.update(editing.id || editing._id, payload);
+        push({ type:'success', title:'Expense Updated', message:'Changes saved.' });
+      }
+      setEditing(null); setSaving(false);
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      window.dispatchEvent(new Event('expenses:changed'));
+    } catch(err){
+      push({ type:'error', title:'Save Failed', message: err.message });
+      setSaving(false);
+    }
+  }
+  function startDelete(id){ setDeleteId(id); }
+  function confirmDelete(){ if(!deleteId) return; deleteMutation.mutate(deleteId, { onSuccess:()=> { push({ type:'success', title:'Expense Deleted', message:'Expense removed.' }); setDeleteId(null); window.dispatchEvent(new Event('expenses:changed')); }, onError:(e)=> { push({ type:'error', title:'Delete Failed', message:e.message }); setDeleteId(null); } }); }
+  function cancelDelete(){ setDeleteId(null); }
 
   const total = rows.reduce((s, e) => s + (e.amount||0), 0);
 
@@ -107,7 +150,8 @@ export default function Expenses() {
           </Card>
           {/* Table */}
           <Card className="overflow-x-auto">
-            <div className="flex items-center justify-end p-3">
+            <div className="flex items-center justify-end gap-2 p-3">
+              <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Expense</Button>
               <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
             </div>
             <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -123,7 +167,7 @@ export default function Expenses() {
                 {error && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
                 {!isLoading && !error && rows.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No expenses</td></tr>}
                 {!isLoading && !error && rows.map((e, idx) => (
-                  <ExpenseRow key={e.id} expense={e} idx={idx} />
+                  <ExpenseRow key={e.id} expense={e} idx={idx} onEdit={openEdit} onDelete={startDelete} />
                 ))}
               </tbody>
             </table>
@@ -145,34 +189,46 @@ export default function Expenses() {
           </Card>
         </aside>
       </div>
+      <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Expense' : 'Edit Expense'} size="sm">
+        {editing && (
+          <form onSubmit={save} className="space-y-4 text-sm">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Category</label>
+              <select value={form.category} onChange={e=>setForm(f=>({...f,category:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Amount</label>
+              <input type="number" min={0} value={form.amount} onChange={e=>setForm(f=>({...f,amount:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
+              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={()=> !saving && setEditing(null)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button disabled={saving} className="rounded-md bg-teal-600 px-5 py-2 text-white text-sm font-medium shadow hover:bg-teal-700 disabled:opacity-60">{saving ? 'Saving...' : (editing==='new' ? 'Add Expense' : 'Save Changes')}</button>
+            </div>
+          </form>
+        )}
+      </Modal>
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Delete expense?"
+        message="This action cannot be undone."
+        tone="danger"
+        confirmLabel={deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }
 
 
-function ExpenseRow({ expense, idx }) {
+function ExpenseRow({ expense, idx, onEdit, onDelete }) {
   const [showMenu, setShowMenu] = useState(false);
-  const queryClient = useQueryClient();
-  const mutation = useMutation({
-    mutationFn: () => api.expenses.remove(expense.id),
-    onMutate: async () => {
-      if (!confirm('Delete this expense?')) return Promise.reject('cancel');
-      await queryClient.cancelQueries({ queryKey: ['expenses'] });
-      const prev = queryClient.getQueriesData({ queryKey: ['expenses'] });
-      prev.forEach(([key, val]) => {
-        if (val?.data) queryClient.setQueryData(key, { ...val, data: val.data.filter(e => e._id !== expense.id) });
-      });
-      return { prev };
-    },
-    onError: (_e,_v,ctx) => ctx?.prev?.forEach(([k,v]) => queryClient.setQueryData(k, v)),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['expenses'] })
-  });
-  const deleting = mutation.isPending;
-  const onDelete = () => mutation.mutate(undefined, {
-    onSuccess: () => {
-      window.dispatchEvent(new Event('expenses:changed'));
-    }
-  });
   return (
     <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
       <td className="px-4 py-3">{expense.category}</td>
@@ -183,8 +239,8 @@ function ExpenseRow({ expense, idx }) {
           <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
           {showMenu && (
             <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
-              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> alert('Edit form TBD')}>Edit</button>
-              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600 disabled:opacity-50" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</button>
+              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> { setShowMenu(false); onEdit(expense); }}>Edit</button>
+              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600" onClick={()=> { setShowMenu(false); onDelete(expense.id); }}>Delete</button>
             </div>
           )}
         </div>

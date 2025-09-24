@@ -7,6 +7,9 @@ import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { downloadCSV } from "../utils/export.js";
+import Modal from "../components/ui/Modal.jsx";
+import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
+import { useToast } from "../components/ui/ToastProvider.jsx";
 
 export default function Baana() {
   const [sortKey, setSortKey] = useState("date");
@@ -19,6 +22,11 @@ export default function Baana() {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const { push } = useToast();
+  const [editing, setEditing] = useState(null); // record or 'new'
+  const [form, setForm] = useState({ date: '', sacks: '' });
+  const [saving, setSaving] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   // Filter by date range
   useEffect(() => {
@@ -43,6 +51,16 @@ export default function Baana() {
     }));
     downloadCSV({ filename: 'baana.csv', columns, rows: rowsToExport });
   };
+
+  function openAdd(){ setEditing('new'); setForm({ date: new Date().toISOString().slice(0,10), sacks: '' }); }
+  function openEdit(rec){ setEditing(rec); setForm({ date: rec.date?.slice(0,10) || '', sacks: rec.sacks }); }
+  async function save(e){ e.preventDefault(); if(!editing) return; setSaving(true); try { const payload = { date: form.date, sacks: Number(form.sacks) }; if(editing==='new'){ await api.baana.create(payload); push({ type:'success', title:'Record Added', message:'Baana record created.' }); } else { await api.baana.update(editing.id || editing._id, payload); push({ type:'success', title:'Record Updated', message:'Changes saved.' }); } setEditing(null); setSaving(false); // refresh list
+      // naive refetch reusing effect deps by toggling page or resetting
+      setPage(1); // triggers effect
+    } catch(err){ push({ type:'error', title:'Save Failed', message: err.message }); setSaving(false); } }
+  function startDelete(id){ setDeleteId(id); }
+  async function confirmDelete(){ if(!deleteId) return; try { await api.baana.remove(deleteId); push({ type:'success', title:'Record Deleted', message:'Baana record removed.' }); setDeleteId(null); setRows(r=> r.filter(x => x.id !== deleteId)); } catch(err){ push({ type:'error', title:'Delete Failed', message: err.message }); setDeleteId(null); } }
+  function cancelDelete(){ setDeleteId(null); }
 
   return (
     <div className="space-y-4">
@@ -70,25 +88,32 @@ export default function Baana() {
         </div>
       </Card>
       <Card className="overflow-x-auto">
-        <div className="flex items-center justify-end p-3">
+        <div className="flex items-center justify-end gap-2 p-3">
+          <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Record</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
-              {['Date','Number of Sacks'].map(h => (
+              {['Date','Number of Sacks','Actions'].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {loading && <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
-            {error && !loading && <tr><td colSpan={2} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>}
-            {!loading && !error && rows.length === 0 && <tr><td colSpan={2} className="px-4 py-6 text-center text-slate-500">No baana records</td></tr>}
+            {loading && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
+            {error && !loading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error}</td></tr>}
+            {!loading && !error && rows.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No baana records</td></tr>}
             {!loading && !error && rows.map((b, idx) => (
               <tr key={b.id} className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                 <td className="px-4 py-3">{b.date ? formatDMY(b.date) : ''}</td>
                 <td className="px-4 py-3">{b.sacks}</td>
+                <td className="px-4 py-3 text-xs">
+                  <div className="flex gap-2">
+                    <button onClick={()=> openEdit(b)} className="rounded border px-2 py-1 bg-white hover:bg-teal-100 border-teal-300 text-teal-700">Edit</button>
+                    <button onClick={()=> startDelete(b.id)} className="rounded border px-2 py-1 bg-white hover:bg-rose-50 border-rose-300 text-rose-600">Delete</button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -101,6 +126,33 @@ export default function Baana() {
           <Button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 disabled:opacity-50">Next</Button>
         </div>
       </div>
+      <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Baana Record' : 'Edit Baana Record'} size="sm">
+        {editing && (
+          <form onSubmit={save} className="space-y-4 text-sm">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
+              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Number of Sacks</label>
+              <input type="number" min={0} value={form.sacks} onChange={e=>setForm(f=>({...f,sacks:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button type="button" onClick={()=> !saving && setEditing(null)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-600 hover:bg-slate-50">Cancel</button>
+              <button disabled={saving} className="rounded-md bg-teal-600 px-5 py-2 text-white text-sm font-medium shadow hover:bg-teal-700 disabled:opacity-60">{saving ? 'Saving...' : (editing==='new' ? 'Add Record' : 'Save Changes')}</button>
+            </div>
+          </form>
+        )}
+      </Modal>
+      <ConfirmDialog
+        open={!!deleteId}
+        title="Delete record?"
+        message="This action cannot be undone."
+        tone="danger"
+        confirmLabel="Delete"
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

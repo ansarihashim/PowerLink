@@ -31,8 +31,8 @@ export default function Workers() {
   const [error, setError] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
 
-  // Edit modal state
-  const [editing, setEditing] = useState(null); // worker object
+  // Add/Edit modal state
+  const [editing, setEditing] = useState(null); // worker object or 'new'
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', joiningDate: '' });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
@@ -70,6 +70,12 @@ export default function Workers() {
     });
   }
 
+  function openAdd(){
+    const today = new Date().toISOString().slice(0,10);
+    setEditing('new');
+    setEditForm({ name: '', phone: '', address: '', joiningDate: today });
+  }
+
   async function saveEdit(e){
     e.preventDefault();
     if (!editing) return;
@@ -77,12 +83,17 @@ export default function Workers() {
     try {
       const payload = { ...editForm };
       if (!payload.name.trim()) throw new Error('Name required');
-      await api.workers.update(editing.id, payload);
-      push({ type: 'success', title: 'Worker Updated', message: 'Changes saved successfully.' });
+      if(editing === 'new') {
+        await api.workers.create(payload);
+        push({ type: 'success', title: 'Worker Added', message: 'New worker created.' });
+      } else {
+        await api.workers.update(editing.id, payload);
+        push({ type: 'success', title: 'Worker Updated', message: 'Changes saved successfully.' });
+      }
       setEditing(null); setSaving(false);
       setRefreshTick(t=>t+1);
     } catch(err){
-      push({ type: 'error', title: 'Update Failed', message: err.message || 'Could not update worker.' });
+      push({ type: 'error', title: 'Save Failed', message: err.message || 'Operation failed.' });
       setSaving(false);
     }
   }
@@ -152,7 +163,8 @@ export default function Workers() {
       </Card>
       {/* Table */}
       <Card className="overflow-x-auto">
-        <div className="flex items-center justify-end p-3">
+        <div className="flex items-center justify-end gap-2 p-3">
+          <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Worker</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
         </div>
         <table className="min-w-full divide-y divide-gray-200 text-sm">
@@ -206,7 +218,7 @@ export default function Workers() {
         </div>
       </div>
   </div>
-  <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title="Edit Worker" size="md">
+  <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Worker' : 'Edit Worker'} size="md">
       {editing && (
         <form onSubmit={saveEdit} className="space-y-4 text-sm">
           <div>
@@ -229,7 +241,7 @@ export default function Workers() {
           </div>
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={()=> !saving && setEditing(null)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-600 hover:bg-slate-50">Cancel</button>
-            <button disabled={saving} className="rounded-md bg-teal-600 px-5 py-2 text-white text-sm font-medium shadow hover:bg-teal-700 disabled:opacity-60">{saving ? 'Saving...' : 'Save Changes'}</button>
+            <button disabled={saving} className="rounded-md bg-teal-600 px-5 py-2 text-white text-sm font-medium shadow hover:bg-teal-700 disabled:opacity-60">{saving ? 'Saving...' : (editing==='new' ? 'Add Worker' : 'Save Changes')}</button>
           </div>
         </form>
       )}
