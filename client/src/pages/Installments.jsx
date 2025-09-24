@@ -12,6 +12,7 @@ import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import { downloadCSV } from "../utils/export.js";
+import Select from "../components/ui/Select.jsx";
 
 export default function Installments() {
   const [searchParams] = useSearchParams();
@@ -157,10 +158,12 @@ export default function Installments() {
           <form onSubmit={save} className="space-y-4 text-sm">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Loan</label>
-              <select value={form.loanId} onChange={e=>setForm(f=>({...f,loanId:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent">
-                <option value="">Select loan</option>
-                {loans.map(l => <option key={l.id} value={l.id}>{l.workerName || 'Worker'} — {Number(l.amount||0).toLocaleString()} (rem {Number(l.remaining||0).toLocaleString()})</option>)}
-              </select>
+              <Select
+                value={form.loanId}
+                onChange={(e)=> setForm(f=>({...f,loanId:e.target.value}))}
+                options={loans.map(l => ({ value: l.id, label: `${l.workerName || 'Worker'} — ${Number(l.amount||0).toLocaleString()} (rem ${Number(l.remaining||0).toLocaleString()})` }))}
+                placeholder="Select loan"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Amount</label>
@@ -192,22 +195,16 @@ export default function Installments() {
 
 
 function InstallmentRow({ inst, idx, onEdit, onDelete }) {
-  const [showMenu, setShowMenu] = useState(false);
   return (
     <tr className={`transition-colors hover:bg-teal-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
       <td className="px-4 py-3">{inst.loanId}</td>
       <td className="px-4 py-3">{inst.workerName || inst.workerId || ''}</td>
       <td className="px-4 py-3">{Number(inst.amount||0).toLocaleString()}</td>
       <td className="px-4 py-3">{inst.date ? formatDMY(inst.date) : ''}</td>
-      <td className="px-4 py-3 text-xs">
-        <div className="relative inline-block">
-          <button onClick={()=> setShowMenu(s=>!s)} className="rounded border px-2 py-1 hover:bg-teal-50">⋮</button>
-          {showMenu && (
-            <div className="absolute right-0 z-10 mt-1 w-32 rounded-md border border-slate-200 bg-white shadow-md text-[11px]">
-              <button className="w-full px-3 py-2 text-left hover:bg-teal-50" onClick={()=> { setShowMenu(false); onEdit(inst); }}>Edit</button>
-              <button className="w-full px-3 py-2 text-left hover:bg-rose-50 text-rose-600" onClick={()=> { setShowMenu(false); onDelete(inst.id); }}>Delete</button>
-            </div>
-          )}
+      <td className="px-4 py-2 text-xs">
+        <div className="flex gap-2">
+          <button onClick={()=>onEdit(inst)} className="rounded border px-2 py-1 hover:bg-teal-50 border-teal-200 text-teal-700">Edit</button>
+          <button onClick={()=>onDelete(inst.id)} className="rounded border px-2 py-1 hover:bg-rose-50 border-rose-200 text-rose-600">Delete</button>
         </div>
       </td>
     </tr>
