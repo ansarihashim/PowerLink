@@ -23,6 +23,7 @@ import Login from "./pages/Login.jsx";
 import Profile from "./pages/Profile.jsx";
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastProvider } from './components/ui/ToastProvider.jsx';
+import UnauthPage from './components/UnauthPage.jsx';
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -66,7 +67,7 @@ export default function App() {
 function Private({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="pt-32 text-center text-sm text-slate-500">Loading...</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <UnauthPage />;
   return children;
 }
 
@@ -84,6 +85,7 @@ function AnimatedRoutes() {
         <Routes location={location}>
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Private><Dashboard /></Private>} />
+          <Route path="/dashboard" element={<Private><Dashboard /></Private>} />
           <Route path="/workers" element={<Private><Workers /></Private>} />
           <Route path="/workers/:id" element={<Private><WorkerDetail /></Private>} />
           <Route path="/loans" element={<Private><Loans /></Private>} />
