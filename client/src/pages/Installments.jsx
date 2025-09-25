@@ -15,6 +15,7 @@ import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { downloadCSV } from "../utils/export.js";
 import Select from "../components/ui/Select.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
 
 export default function Installments() {
   const [searchParams] = useSearchParams();
@@ -150,18 +151,14 @@ export default function Installments() {
             ))}
           </tbody>
         </table>
-        {isFetching && rows.length > 0 && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <Spinner size={28} />
-          </div>
-        )}
+        <PageTransitionOverlay active={isFetching && rows.length > 0} />
         </div>
       </Card>
-      <div className="flex items-center justify-between text-sm text-slate-600">
+      <div className="flex items-center justify-between text-sm text-slate-600 select-none">
         <span>Page {page} of {totalPages}</span>
         <div className="flex gap-2">
-          <Button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 disabled:opacity-50">Prev</Button>
-          <Button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 disabled:opacity-50">Next</Button>
+          <Button disabled={page===1 || isFetching} onClick={()=> { if(page>1) setPage(p=>Math.max(1,p-1)); }} className="px-3 py-1 disabled:opacity-50 min-w-[72px]">Prev</Button>
+          <Button disabled={page===totalPages || isFetching} onClick={()=> { if(page<totalPages) setPage(p=>Math.min(totalPages,p+1)); }} className="px-3 py-1 disabled:opacity-50 min-w-[72px]">Next</Button>
         </div>
       </div>
   <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Installment' : 'Edit Installment'} size="sm" height="tall">

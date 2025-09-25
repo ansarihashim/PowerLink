@@ -13,6 +13,8 @@ import Modal from "../components/ui/Modal.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 import { downloadCSV } from "../utils/export.js";
+import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
+import Spinner from "../components/ui/Spinner.jsx";
 
 export default function Workers() {
   const navigate = useNavigate();
@@ -176,7 +178,7 @@ export default function Workers() {
         </div>
       </Card>
       {/* Table */}
-      <Card className="overflow-x-auto">
+  <Card className="overflow-x-auto relative">
         <div className="flex items-center justify-end gap-2 p-3">
           <Button onClick={openAdd} className="bg-teal-600 text-white hover:bg-teal-700">Add Worker</Button>
           <Button variant="outline" onClick={exportCSV}>Export CSV</Button>
@@ -224,19 +226,15 @@ export default function Workers() {
             ))}
           </tbody>
         </table>
-        {loading && rows.length > 0 && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />
-          </div>
-        )}
+        <PageTransitionOverlay active={loading && rows.length > 0} />
         </div>
       </Card>
       {/* Pagination placeholder */}
-      <div className="flex items-center justify-between text-sm text-slate-600">
+      <div className="flex items-center justify-between text-sm text-slate-600 select-none">
         <span>Page {page} of {totalPages}</span>
         <div className="flex gap-2">
-          <Button disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-1 disabled:opacity-50">Prev</Button>
-          <Button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 disabled:opacity-50">Next</Button>
+          <Button disabled={page===1 || loading} onClick={()=> { if(page>1) setPage(p=>Math.max(1,p-1)); }} className="px-3 py-1 disabled:opacity-50 min-w-[72px]">Prev</Button>
+          <Button disabled={page===totalPages || loading} onClick={()=> { if(page<totalPages) setPage(p=>Math.min(totalPages,p+1)); }} className="px-3 py-1 disabled:opacity-50 min-w-[72px]">Next</Button>
         </div>
       </div>
   </div>
