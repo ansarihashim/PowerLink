@@ -43,6 +43,7 @@ async function listLoans(req, res) {
 			workerName: l.workerId?.name,
 			amount: l.amount,
 			loanDate: l.loanDate,
+			dueDate: l.dueDate,
 			notes: l.notes,
 			remaining: Math.max(0, l.amount - paid)
 		};
@@ -65,6 +66,7 @@ async function getLoan(req, res) {
 		workerName: loan.workerId?.name,
 		amount: loan.amount,
 		loanDate: loan.loanDate,
+		dueDate: loan.dueDate,
 		notes: loan.notes,
 		remaining
 	}});
@@ -72,9 +74,9 @@ async function getLoan(req, res) {
 
 async function createLoan(req, res) {
 	try {
-		const { workerId, amount, loanDate, notes } = req.body;
-		if (!workerId || !amount || !loanDate) return error(res, 'Missing fields', 'VALIDATION_ERROR', 400);
-		const loan = await Loan.create({ workerId, amount, loanDate, notes });
+		const { workerId, amount, loanDate, dueDate, notes } = req.body;
+		if (!workerId || !amount || !loanDate || !dueDate) return error(res, 'Missing fields', 'VALIDATION_ERROR', 400);
+		const loan = await Loan.create({ workerId, amount, loanDate, dueDate, notes });
 		return created(res, { loan });
 	} catch (e) { return error(res, e.message, 'VALIDATION_ERROR', 400); }
 }
@@ -82,8 +84,8 @@ async function createLoan(req, res) {
 async function updateLoan(req, res) {
 	try {
 		if (!mongoose.isValidObjectId(req.params.id)) return error(res, 'Invalid id', 'INVALID_ID', 400);
-		const { amount, loanDate, notes } = req.body;
-		const loan = await Loan.findByIdAndUpdate(req.params.id, { amount, loanDate, notes }, { new: true });
+		const { amount, loanDate, dueDate, notes } = req.body;
+		const loan = await Loan.findByIdAndUpdate(req.params.id, { amount, loanDate, dueDate, notes }, { new: true });
 		if (!loan) return error(res, 'Not found', 'NOT_FOUND', 404);
 		return ok(res, { loan });
 	} catch (e) { return error(res, e.message); }

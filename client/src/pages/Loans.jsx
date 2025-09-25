@@ -45,25 +45,33 @@ export default function Loans() {
 
   // Edit/Delete state
   const [editing, setEditing] = useState(null); // loan object
-  const [editForm, setEditForm] = useState({ amount:'', loanDate:'', notes:'' });
+  const [editForm, setEditForm] = useState({ amount:'', loanDate:'', dueDate:'', notes:'', dueEdited:false });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const { push } = useToast();
   // Create modal state
   const [creating, setCreating] = useState(false);
   const today = new Date().toISOString().slice(0,10);
-  const [createForm, setCreateForm] = useState({ workerId: '', amount: '', loanDate: today, notes: '' });
+  const plusDays = (baseYMD, days) => {
+    const d = new Date(baseYMD);
+    d.setDate(d.getDate()+days);
+    return d.toISOString().slice(0,10);
+  };
+  const [createForm, setCreateForm] = useState({ workerId: '', amount: '', loanDate: today, dueDate: plusDays(today,30), notes: '', dueEdited:false });
   const [createSaving, setCreateSaving] = useState(false);
   const [workers, setWorkers] = useState([]);
 
   function openEdit(loan){
     setEditing(loan);
-    setEditForm({ amount: loan.amount, loanDate: loan.loanDate?.slice(0,10) || '', notes: loan.notes || '' });
+  const ld = loan.loanDate?.slice(0,10) || '';
+  let dd = loan.dueDate?.slice(0,10) || '';
+  if(ld && (!dd || dd < ld)) dd = plusDays(ld,30);
+  setEditForm({ amount: loan.amount, loanDate: ld, dueDate: dd, notes: loan.notes || '', dueEdited:false });
   }
 
   function openCreate(){
     setCreating(true);
-    setCreateForm({ workerId: '', amount: '', loanDate: today, notes: '' });
+  setCreateForm({ workerId: '', amount: '', loanDate: today, dueDate: plusDays(today,30), notes: '', dueEdited:false });
     // fetch workers (simple one-shot list)
     api.workers.list({ page:1, pageSize:100, sortBy:'name', sortDir:'asc' })
       .then(r => { setWorkers((r.data||[]).map(w => ({ id: w._id, name: w.name }))); })
@@ -75,9 +83,11 @@ export default function Loans() {
     try {
       if(!createForm.workerId) throw new Error('Worker required');
       if(!createForm.amount) throw new Error('Amount required');
-      if(!createForm.loanDate) throw new Error('Loan date required');
+  if(!createForm.loanDate) throw new Error('Loan date required');
+  if(!createForm.dueDate) throw new Error('Due date required');
+  if(createForm.dueDate < createForm.loanDate) throw new Error('Due date cannot be before loan date');
       setCreateSaving(true);
-      const payload = { workerId: createForm.workerId, amount: Number(createForm.amount), loanDate: createForm.loanDate, notes: createForm.notes };
+  const payload = { workerId: createForm.workerId, amount: Number(createForm.amount), loanDate: createForm.loanDate, dueDate: createForm.dueDate, notes: createForm.notes };
       await api.loans.create(payload);
       push({ type:'success', title:'Loan Added', message:'New loan created.' });
       setCreating(false); setCreateSaving(false);
@@ -91,7 +101,9 @@ export default function Loans() {
   async function saveEdit(e){
     e.preventDefault(); if(!editing) return; setSaving(true);
     try {
-      const payload = { amount: Number(editForm.amount), loanDate: editForm.loanDate, notes: editForm.notes };
+  if(!editForm.dueDate) throw new Error('Due date required');
+  if(editForm.dueDate < editForm.loanDate) throw new Error('Due date before loan date');
+  const payload = { amount: Number(editForm.amount), loanDate: editForm.loanDate, dueDate: editForm.dueDate, notes: editForm.notes };
       await api.loans.update(editing.id || editing._id, payload);
       push({ type:'success', title:'Loan Updated', message:'Changes saved.' });
       setEditing(null); setSaving(false);
@@ -147,13 +159,15 @@ export default function Loans() {
     const columns = [
       { key: 'workerId', header: 'Worker ID' },
       { key: 'amount', header: 'Loan Amount' },
-      { key: 'loanDate', header: 'Loan Date' },
+  { key: 'loanDate', header: 'Loan Date' },
+  { key: 'dueDate', header: 'Due Date' },
       { key: 'remaining', header: 'Remaining Loan' },
       { key: 'reason', header: 'Reason' },
     ];
     const rowsToExport = rows.map(l => ({
       ...l,
-      loanDate: formatDMY(l.loanDate),
+  loanDate: formatDMY(l.loanDate),
+  dueDate: formatDMY(l.dueDate),
     }));
     downloadCSV({ filename: 'loans.csv', columns, rows: rowsToExport });
   };
@@ -245,13 +259,35 @@ export default function Loans() {
               <label className="block text-xs font-medium text-slate-600 mb-1">Amount</label>
               <input type="number" min={0} value={editForm.amount} onChange={e=>setEditForm(f=>({...f,amount:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
-              <ThemedCalendarInput
-                value={editForm.loanDate}
-                onChange={(e)=> setEditForm(f=>({...f, loanDate:e.target.value}))}
-                className="w-full"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
+                <ThemedCalendarInput
+                  value={editForm.loanDate}
+                  onChange={(e)=> setEditForm(f=>{
+                    const loanDate = e.target.value;
+                    // Only auto-adjust if user hasn't manually edited due date yet
+                    if(!f.dueEdited){
+                      let dueDate = f.dueDate;
+                      if(!dueDate || dueDate < loanDate) dueDate = plusDays(loanDate,30);
+                      return { ...f, loanDate, dueDate };
+                    }
+                    return { ...f, loanDate };
+                  })}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Due Date</label>
+                <ThemedCalendarInput
+                  value={editForm.dueDate}
+                  onChange={(e)=> setEditForm(f=>({...f, dueDate:e.target.value, dueEdited:true}))}
+                  className="w-full"
+                />
+                {editForm.dueDate && editForm.loanDate && editForm.dueDate < editForm.loanDate && (
+                  <p className="col-span-2 text-[11px] text-rose-600 -mt-1">Due date must be on or after loan date.</p>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
@@ -290,13 +326,34 @@ export default function Loans() {
               <label className="block text-xs font-medium text-slate-600 mb-1">Amount</label>
               <input type="number" min={0} value={createForm.amount} onChange={e=>setCreateForm(f=>({...f,amount:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
-              <ThemedCalendarInput
-                value={createForm.loanDate}
-                onChange={(e)=> setCreateForm(f=>({...f, loanDate:e.target.value}))}
-                className="w-full"
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
+                <ThemedCalendarInput
+                  value={createForm.loanDate}
+                  onChange={(e)=> setCreateForm(f=>{
+                    const loanDate = e.target.value;
+                    if(!f.dueEdited){
+                      let dueDate = f.dueDate;
+                      if(!dueDate || dueDate < loanDate) dueDate = plusDays(loanDate,30);
+                      return { ...f, loanDate, dueDate };
+                    }
+                    return { ...f, loanDate };
+                  })}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">Due Date</label>
+                <ThemedCalendarInput
+                  value={createForm.dueDate}
+                  onChange={(e)=> setCreateForm(f=>({...f, dueDate:e.target.value, dueEdited:true}))}
+                  className="w-full"
+                />
+                {createForm.dueDate && createForm.loanDate && createForm.dueDate < createForm.loanDate && (
+                  <p className="col-span-2 text-[11px] text-rose-600 -mt-1">Due date must be on or after loan date.</p>
+                )}
+              </div>
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
@@ -338,6 +395,7 @@ function GroupedLoanRow({ group, idx, onEdit, onDelete }) {
                 <div className="flex flex-wrap gap-4 text-[11px] text-teal-800">
                   <span><strong>Amount:</strong> {Number(l.amount||0).toLocaleString()}</span>
                   <span><strong>Date:</strong> {l.loanDate ? formatDMY(l.loanDate) : ''}</span>
+                  <span><strong>Due:</strong> {l.dueDate ? formatDMY(l.dueDate) : ''}</span>
                   <span><strong>Remaining:</strong> {Number(l.remaining||0).toLocaleString()}</span>
                   {l.notes && <span><strong>Notes:</strong> {l.notes}</span>}
                   <span className="ml-auto flex gap-2">

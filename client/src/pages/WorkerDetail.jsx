@@ -63,14 +63,14 @@ export default function WorkerDetail() {
         {!loading && !error && data && !edit && (
           <div className="space-y-8">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-              <div className="flex gap-5">
-                <div className="h-24 w-24 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center text-4xl font-semibold shadow-md ring-4 ring-teal-500/10 overflow-hidden">
+            <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5 flex-1">
+                <div className="h-20 w-20 sm:h-24 sm:w-24 mx-auto sm:mx-0 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center text-4xl font-semibold shadow-md ring-4 ring-teal-500/10 overflow-hidden">
                   {data.photo ? <img src={data.photo} alt="avatar" className="h-full w-full object-cover" /> : (data.name?.[0]||'W').toUpperCase()}
                 </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-slate-900 leading-tight tracking-tight">{data.name}</h3>
-                  <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                <div className="flex-1">
+                  <h3 className="text-lg sm:text-xl font-semibold text-slate-900 leading-tight tracking-tight text-center sm:text-left">{data.name}</h3>
+                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] justify-center sm:justify-start">
                     <MetaPill label="Phone" value={data.phone} />
                     <MetaPill label="Aadhaar" value={data.aadhaarNumber} />
                     <MetaPill label="Joined" value={data.joiningDate ? formatDMY(data.joiningDate) : ''} />
@@ -79,14 +79,14 @@ export default function WorkerDetail() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-2 self-start">
-                <Button onClick={() => setEdit(true)}>Edit</Button>
-                <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
-                <Button variant="danger" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete'}</Button>
+              <div className="flex flex-col xs:flex-row md:flex-row gap-2 w-full md:w-auto md:self-start">
+                <Button className="flex-1 md:flex-none" onClick={() => setEdit(true)}>Edit</Button>
+                <Button className="flex-1 md:flex-none" variant="outline" onClick={() => navigate(-1)}>Back</Button>
+                <Button className="flex-1 md:flex-none" variant="danger" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete'}</Button>
               </div>
             </div>
             {/* Summary Badges */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
               <SummaryStat label="Total Loan" value={(data.totalLoan ?? 0).toLocaleString()} tone="teal" />
               <SummaryStat label="Remaining Loan" value={(data.remainingLoan ?? 0).toLocaleString()} tone="rose" />
               <SummaryStat label="Loans" value={(data.loans?.length||0).toLocaleString()} tone="indigo" />
@@ -129,7 +129,7 @@ export default function WorkerDetail() {
           <form onSubmit={onSave} className="space-y-4 text-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input label="Name" name="name" value={form.name} onChange={onChange} />
-              <Input label="Phone" name="phone" value={form.phone} onChange={onChange} />
+              <Input label="Phone" name="phone" value={form.phone} maxLength={10} onChange={(e)=> setForm(f=>({...f, phone: e.target.value.replace(/[^0-9]/g,'')}))} helper={form.phone && form.phone.length!==10 ? 'Must be 10 digits' : ''} />
               <Input label="Address" name="address" value={form.address} onChange={onChange} className="sm:col-span-2" />
               <ThemedCalendarInput label="Joining Date" name="joiningDate" value={form.joiningDate} onChange={onChange} />
               <Input label="Aadhaar Number *" name="aadhaarNumber" value={form.aadhaarNumber} onChange={(e)=> setForm(f=>({...f, aadhaarNumber: e.target.value.trim()}))} />
@@ -227,11 +227,13 @@ function TableWrapper({ headers, rows, renderRow, empty }) {
   );
 }
 
-function Input({ label, className = '', ...rest }) {
+function Input({ label, helper='', className = '', ...rest }) {
+  const invalid = !!helper;
   return (
     <label className={`block ${className}`}>
       <span className="text-xs uppercase tracking-wide text-slate-500 mb-1 block">{label}</span>
-      <input {...rest} className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all" />
+      <input {...rest} className={`w-full rounded-md border px-3 py-2 text-sm transition-all hover:border-teal-300 focus:ring-2 ${invalid ? 'border-rose-300 bg-rose-50 focus:border-rose-400 focus:ring-rose-200' : 'border-gray-200 focus:border-teal-400 focus:ring-teal-200'}`} />
+      {invalid && <span className="mt-1 block text-[11px] font-medium text-rose-600">{helper}</span>}
     </label>
   );
 }

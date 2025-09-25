@@ -2,6 +2,7 @@ import app from './app.js';
 import { connectMongo } from './db/mongoose.js';
 import { config } from './config/env.js';
 import { Worker } from './models/Worker.js';
+import { Loan } from './models/Loan.js';
 
 async function backfillWorkers(){
   // Generate a pseudo Aadhaar: 12 digits starting with 6-9
@@ -30,10 +31,24 @@ async function backfillWorkers(){
   console.log(`Backfilled ${bulk.length} workers with default photo / Aadhaar.`);
 }
 
+async function backfillLoanDueDates(){
+  // Assign dueDate = loanDate + 30 days for any loan missing dueDate
+  const toFix = await Loan.find({ $or:[ { dueDate: { $exists:false } }, { dueDate: null } ] }).limit(1000).exec();
+  if(!toFix.length) return;
+  const ops = toFix.map(l => {
+    const base = l.loanDate ? new Date(l.loanDate) : new Date();
+    const due = new Date(base.getTime() + 30*24*60*60*1000);
+    return { updateOne: { filter:{ _id: l._id }, update:{ $set:{ dueDate: due } } } };
+  });
+  if(ops.length) await Loan.bulkWrite(ops);
+  console.log(`Backfilled dueDate for ${ops.length} loans.`);
+}
+
 (async () => {
   try {
     await connectMongo();
-  await backfillWorkers();
+    await backfillWorkers();
+    await backfillLoanDueDates();
   app.listen(config.port, () => console.log(`API listening on :${config.port}`));
   } catch (e) {
     console.error('Failed to start server', e);

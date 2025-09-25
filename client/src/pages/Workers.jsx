@@ -88,7 +88,10 @@ export default function Workers() {
   const payload = { ...editForm };
       // Front-end validation to avoid 400 (Missing fields)
       if (!payload.name.trim()) throw new Error('Name required');
-      if (!payload.phone.trim()) throw new Error('Phone required');
+  const cleanPhone = payload.phone.replace(/[^0-9]/g,'');
+  if (!cleanPhone) throw new Error('Phone required');
+  if (cleanPhone.length !== 10) throw new Error('Phone must be 10 digits');
+  payload.phone = cleanPhone;
       if (!payload.address.trim()) throw new Error('Address required');
   if (!payload.joiningDate) throw new Error('Joining date required');
   if (!payload.aadhaarNumber || payload.aadhaarNumber.length < 12) throw new Error('Valid Aadhaar required');
@@ -247,7 +250,7 @@ export default function Workers() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Phone</label>
-              <input value={editForm.phone} onChange={e=>setEditForm(f=>({...f,phone:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <input value={editForm.phone} onChange={e=>setEditForm(f=>({...f,phone:e.target.value.replace(/[^0-9]/g,'')}))} maxLength={10} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Joining Date</label>

@@ -4,6 +4,7 @@ const LoanSchema = new mongoose.Schema({
 	workerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Worker', required: true },
 	amount: { type: Number, required: true },
 	loanDate: { type: Date, required: true },
+	dueDate: { type: Date, required: true },
 	notes: { type: String }
 }, { timestamps: true });
 

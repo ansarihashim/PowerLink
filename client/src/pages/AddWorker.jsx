@@ -17,10 +17,11 @@ export default function AddWorker() {
   const validate = () => {
     const e = {};
     if (!form.name.trim()) e.name = "Required";
-    if (!form.phone.trim()) e.phone = "Required";
+    const cleanPhone = form.phone.replace(/[^0-9]/g,'');
+    if (!cleanPhone) e.phone = "Required"; else if (cleanPhone.length !== 10) e.phone = "10 digits";
     if (!form.address.trim()) e.address = "Required";
     if (!form.joiningDate) e.joiningDate = "Required";
-  if (!form.aadhaarNumber || form.aadhaarNumber.length !== 12) e.aadhaarNumber = "12 digits";
+	if (!form.aadhaarNumber || form.aadhaarNumber.length !== 12) e.aadhaarNumber = "12 digits";
     return e;
   };
 
@@ -32,7 +33,8 @@ export default function AddWorker() {
     if (Object.keys(eMap).length) return;
     setSubmitting(true);
     try {
-      await api.workers.create(form);
+      const payload = { ...form, phone: form.phone.replace(/[^0-9]/g,'') };
+      await api.workers.create(payload);
       setSuccess("Worker saved");
   setForm({ name: "", phone: "", address: "", joiningDate: "", aadhaarNumber:"", photo:"" });
     } catch (err) {
@@ -50,7 +52,15 @@ export default function AddWorker() {
 
   const field = (name, placeholder, props = {}) => (
     <div>
-      <input name={name} value={form[name]} onChange={onChange} placeholder={placeholder} {...props} className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors[name] ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} />
+      <input
+        name={name}
+        value={form[name]}
+        onChange={(e)=> setForm(f=> ({...f, [name]: name==='phone' ? e.target.value.replace(/[^0-9]/g,'') : e.target.value }))}
+        placeholder={placeholder}
+        {...props}
+        maxLength={name==='phone'?10:props.maxLength}
+        className={`w-full rounded-md border px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors[name] ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}
+      />
       {errors[name] && <div className="mt-1 text-xs text-rose-600">{errors[name]}</div>}
     </div>
   );
