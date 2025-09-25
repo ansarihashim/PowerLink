@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { toYMD as fmtYMD } from "../../utils/date.js";
 
 // Helpers
@@ -137,29 +138,34 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
 
   if(inline) return <div className={`rounded-lg border border-teal-100 bg-white p-2 ${className}`}>{Calendar}</div>;
 
-  // Compute dynamic alignment (left or shift to keep inside viewport)
-  const popoverStyle = {};
-  if (open && ref.current) {
-    const rect = ref.current.getBoundingClientRect();
-    const width = 288; // w-72 ~ 18rem -> 288px
-    let leftOffset = 0;
-    // If overflowing right, align to right edge
-    if (rect.left + width > window.innerWidth - 8) {
-      leftOffset = Math.min(0, window.innerWidth - 8 - (rect.left + width));
-    }
-    // If would overflow left (unlikely since we anchor left), safeguard
-    if (rect.left + leftOffset < 8) {
-      leftOffset = 8 - rect.left;
-    }
-    popoverStyle.left = leftOffset + 'px';
-    // Vertical: if not enough space below, open upwards
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const estimatedHeight = 340; // approximate calendar height
-    if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
-      popoverStyle.top = 'auto';
-      popoverStyle.bottom = `calc(100% + 0.25rem)`; // 4px
-    }
-  }
+  // Portal positioning state
+  const [portalStyle, setPortalStyle] = useState({ top: 0, left: 0, dropUp: false, width: 288 });
+
+  useEffect(()=> {
+    if(!open || inline) return;
+    const place = () => {
+      const trigger = ref.current; if(!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const width = 288; // calendar width
+      // Horizontal clamp with 8px padding
+      let left = rect.left;
+      if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - width);
+      if (left < 8) left = 8;
+      // Vertical decide direction
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const estHeight = 340;
+      let top = rect.bottom + 6; let dropUp = false;
+      if (spaceBelow < estHeight && rect.top > estHeight) { // open up
+        top = rect.top - 6 - estHeight;
+        dropUp = true;
+      }
+      setPortalStyle({ top: Math.round(top), left: Math.round(left), dropUp, width });
+    };
+    place();
+    window.addEventListener('resize', place);
+    window.addEventListener('scroll', place, true);
+    return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
+  }, [open, inline]);
 
   return (
     <div ref={ref} className={`relative inline-block text-left ${className}`}>
@@ -175,14 +181,14 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
       >
         <span className={selectedDate ? 'text-slate-800' : 'text-slate-400'}>{displayLabel}</span>
       </button>
-      {open && (
+      {open && !inline && createPortal(
         <div
-          className={`absolute left-0 z-50 mt-1 transform transition-all duration-150 ${popoverStyle.bottom ? 'origin-bottom-left' : 'origin-top-left'} ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          style={popoverStyle}
+          className={`z-[9999] fixed transform transition-all duration-150 ${portalStyle.dropUp ? 'origin-bottom-left' : 'origin-top-left'} ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          style={{ top: portalStyle.top, left: portalStyle.left, width: portalStyle.width, maxWidth: 'calc(100vw - 16px)' }}
         >
           {Calendar}
-        </div>
-      )}
+        </div>, document.body)
+      }
     </div>
   );
 }

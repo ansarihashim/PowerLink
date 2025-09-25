@@ -178,6 +178,17 @@ export default function Loans() {
           <SortSelect
             value={sortKey}
             onChange={(e)=>setSortKey(e.target.value)}
+            onSortAnimationKick={()=> {
+              const container = document.querySelector('#loans-rows-wrapper');
+              if(container){
+                container.classList.remove('fade-slide-active');
+                container.classList.add('fade-slide-enter');
+                // Force reflow then activate
+                void container.offsetWidth;
+                container.classList.add('fade-slide-active');
+                setTimeout(()=> container.classList.remove('fade-slide-enter'), 200);
+              }
+            }}
             options={[
               { value: 'loanDate', label: 'Loan Date' },
               { value: 'amount', label: 'Loan Amount' },
@@ -203,7 +214,7 @@ export default function Loans() {
               <th className="px-4 py-3 text-left font-medium">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody id="loans-rows-wrapper" className="divide-y divide-gray-100 fade-slide-active">
             {isLoading && groupedList.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">Loading...</td></tr>}
             {error && groupedList.length === 0 && !isLoading && <tr><td colSpan={3} className="px-4 py-6 text-center text-rose-600">{error.message}</td></tr>}
             {!isLoading && !error && groupedList.length === 0 && <tr><td colSpan={3} className="px-4 py-6 text-center text-slate-500">No loans</td></tr>}

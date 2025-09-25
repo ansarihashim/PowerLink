@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export default function SortSelect({ value, onChange, options, className = "" }) {
+export default function SortSelect({ value, onChange, options, className = "", onSortAnimationKick }) {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
   const [highlight, setHighlight] = useState(0);
@@ -34,7 +34,12 @@ export default function SortSelect({ value, onChange, options, className = "" })
         e.preventDefault();
         const opt = options[highlight];
         if (opt) {
+          const old = value;
           onChange?.({ target: { value: opt.value } });
+          // Notify parent so it can animate list if desired
+          if (onSortAnimationKick && old !== opt.value) {
+            onSortAnimationKick(opt.value, old);
+          }
           setOpen(false);
         }
       }
@@ -101,7 +106,7 @@ export default function SortSelect({ value, onChange, options, className = "" })
                 <li key={opt.value} role="option" aria-selected={active}>
                   <button
                     type="button"
-                    onClick={() => { onChange?.({ target: { value: opt.value } }); setOpen(false); }}
+                    onClick={() => { const prev = value; onChange?.({ target: { value: opt.value } }); if(onSortAnimationKick && prev !== opt.value) onSortAnimationKick(opt.value, prev); setOpen(false); }}
                     className={`flex w-full items-center justify-between px-3 py-2 text-sm text-slate-700 transition-colors hover:bg-teal-50 hover:text-teal-700 ${active ? 'bg-teal-100 text-teal-800' : ''} ${idx === highlight && !active ? 'bg-teal-50' : ''}`}
                   >
                     <span>{opt.label ?? opt.value}</span>
