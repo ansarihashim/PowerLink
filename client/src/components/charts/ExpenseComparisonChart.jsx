@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { api } from '../../api/http.js';
 import Card from '../ui/Card.jsx';
-import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
+import SortSelect from '../ui/SortSelect.jsx';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 
 // Helper to parse dd/mm/yyyy to ISO yyyy-mm-dd
 function parseDMY(dStr){
@@ -16,111 +17,58 @@ function formatLabel(range){
 }
 
 export default function ExpenseComparisonChart(){
-  const [thisRange, setThisRange] = useState(()=>{
-    const now = new Date();
-    const ym = `${String(now.getMonth()+1).padStart(2,'0')}`;
-    const start = new Date(now.getFullYear(), now.getMonth(),1);
-    const prevStart = new Date(now.getFullYear(), now.getMonth()-1,1);
-    const prevEnd = new Date(now.getFullYear(), now.getMonth(),0);
-    return { start, end: now, prevStart, prevEnd };
-  });
-
-  const [customA, setCustomA] = useState({ from:'', to:'' });
-  const [customB, setCustomB] = useState({ from:'', to:'' });
-  const [useCustom, setUseCustom] = useState(false);
-  const [data, setData] = useState([]); // merged dataset for recharts
+  // Last 12 complete months including current up to today
+  const [monthsBack, setMonthsBack] = useState(12);
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const buildDataset = useCallback((aRows, bRows, labelA, labelB) => {
-    // Convert aggregation rows -> map key
-    const normalize = (rows) => rows.reduce((acc,r)=>{
-      const {_id, total} = r; // _id has y,m,(d)
-      const key = _id.d ? `${_id.y}-${String(_id.m).padStart(2,'0')}-${String(_id.d).padStart(2,'0')}` : `${_id.y}-${String(_id.m).padStart(2,'0')}`;
-      acc[key]= total; return acc;
-    },{});
-    const aMap = normalize(aRows); const bMap = normalize(bRows);
-    const keys = Array.from(new Set([...Object.keys(aMap), ...Object.keys(bMap)])).sort();
-    return keys.map(k=> ({ period:k, [labelA]: aMap[k]||0, [labelB]: bMap[k]||0 }));
-  },[]);
 
   const fetchData = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      let from1, to1, from2, to2, group='day';
-      if(useCustom){
-        from1 = parseDMY(customA.from); to1 = parseDMY(customA.to);
-        from2 = parseDMY(customB.from); to2 = parseDMY(customB.to);
-        if(!from1||!to1||!from2||!to2) throw new Error('Enter both date ranges (dd/mm/yyyy)');
-        // Determine grouping: if range > 62 days group by month else day
-        const d1 = (new Date(to1)-new Date(from1))/(1000*60*60*24);
-        group = d1>62? 'month':'day';
-      } else {
-        from1 = thisRange.start.toISOString().slice(0,10);
-        to1 = thisRange.end.toISOString().slice(0,10);
-        from2 = thisRange.prevStart.toISOString().slice(0,10);
-        to2 = thisRange.prevEnd.toISOString().slice(0,10);
-        group = 'day';
-      }
-      const [r1, r2] = await Promise.all([
-        api.expenses.aggregate({ from: from1, to: to1, group }),
-        api.expenses.aggregate({ from: from2, to: to2, group })
-      ]);
-      const labelA = useCustom? 'Range A':'This Period';
-      const labelB = useCustom? 'Range B':'Previous Period';
-      const ds = buildDataset(r1.data||[], r2.data||[], labelA, labelB);
+      const now = new Date();
+      const start = new Date(now.getFullYear(), now.getMonth() - (monthsBack-1), 1);
+      const from = start.toISOString().slice(0,10);
+      const to = now.toISOString().slice(0,10);
+      // Group by month
+      const res = await api.expenses.aggregate({ from, to, group: 'month' });
+      const rows = (res.data||[]).sort((a,b)=> (a._id.y - b._id.y) || (a._id.m - b._id.m));
+      const ds = rows.map(r => ({
+        period: `${r._id.y}-${String(r._id.m).padStart(2,'0')}`,
+        Month: r.total || 0
+      }));
       setData(ds);
     } catch(e){ setError(e.message || 'Failed to load chart'); }
     finally { setLoading(false); }
-  },[buildDataset, customA.from, customA.to, customB.from, customB.to, thisRange, useCustom]);
+  }, [monthsBack]);
 
-  useEffect(()=>{ fetchData(); }, [fetchData]);
-
-  // Update automatically when expense list changes? We can listen via a simple interval or exported event bus.
-  // For now rely on explicit invocation after create/update by exposing window.dispatchEvent(new Event('expenses:changed'))
+  useEffect(()=> { fetchData(); }, [fetchData]);
   useEffect(()=> {
     const handler = ()=> fetchData();
     window.addEventListener('expenses:changed', handler);
     return ()=> window.removeEventListener('expenses:changed', handler);
   }, [fetchData]);
 
-  const onRangeChange = (setter) => (e)=> setter(v=> ({ ...v, [e.target.name]: e.target.value }));
-
   return (
     <Card className="p-4 mt-4">
       <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h3 className="text-base font-semibold text-slate-800">Expense Comparison</h3>
-          <p className="text-xs text-slate-500">Compare current vs previous period or choose custom ranges.</p>
+            <h3 className="text-base font-semibold text-slate-800">Monthly Expenses</h3>
+            <p className="text-xs text-slate-500">Aggregated expense totals per month.</p>
         </div>
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3 text-xs">
-            <label className="flex items-center gap-1 cursor-pointer select-none">
-              <input type="checkbox" className="accent-teal-600" checked={useCustom} onChange={e=> setUseCustom(e.target.checked)} />
-              <span>Custom Ranges</span>
-            </label>
-          </div>
-          {useCustom && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-              <div>
-                <label className="block text-[10px] font-medium text-slate-600 mb-1">Range A From (dd/mm/yyyy)</label>
-                <input name="from" value={customA.from} onChange={onRangeChange(setCustomA)} placeholder="01/01/2025" className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-medium text-slate-600 mb-1">Range A To</label>
-                <input name="to" value={customA.to} onChange={onRangeChange(setCustomA)} placeholder="31/01/2025" className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-medium text-slate-600 mb-1">Range B From</label>
-                <input name="from" value={customB.from} onChange={onRangeChange(setCustomB)} placeholder="01/02/2025" className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
-              </div>
-              <div>
-                <label className="block text-[10px] font-medium text-slate-600 mb-1">Range B To</label>
-                <input name="to" value={customB.to} onChange={onRangeChange(setCustomB)} placeholder="28/02/2025" className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
-              </div>
-              <button onClick={fetchData} className="col-span-full mt-1 inline-flex items-center justify-center rounded-md bg-teal-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-700">Update</button>
-            </div>
-          )}
+        <div className="flex items-center gap-2 text-xs">
+          <span className="text-slate-600">Months:</span>
+          <SortSelect
+            value={String(monthsBack)}
+            onChange={(e)=> setMonthsBack(Number(e.target.value))}
+            options={[
+              { value: '6', label: 'Last 6' },
+              { value: '12', label: 'Last 12' },
+              { value: '18', label: 'Last 18' },
+              { value: '24', label: 'Last 24' },
+            ]}
+            className="min-w-[90px]"
+          />
         </div>
       </div>
 
@@ -132,22 +80,30 @@ export default function ExpenseComparisonChart(){
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top:10, right:20, bottom:0, left:0 }}>
               <defs>
-                <linearGradient id="colorA" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0d9488" stopOpacity={0.35} />
+                <linearGradient id="colorMonth" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0d9488" stopOpacity={0.4} />
                   <stop offset="95%" stopColor="#0d9488" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorB" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0891b2" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#0891b2" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
-              <XAxis dataKey="period" tick={{ fontSize:11 }} stroke="#64748b" />
+              <XAxis
+                dataKey="period"
+                tickFormatter={(v)=> {
+                  const [y,m] = v.split('-');
+                  return new Date(Number(y), Number(m)-1, 1).toLocaleString(undefined,{ month:'short', year: monthsBack>12 ? '2-digit':'numeric' });
+                }}
+                tick={{ fontSize:11 }} stroke="#64748b" interval={0}
+              />
               <YAxis tick={{ fontSize:11 }} stroke="#64748b" />
-              <Tooltip contentStyle={{ fontSize:'12px', borderRadius:'6px' }} />
-              <Legend wrapperStyle={{ fontSize:'12px' }} />
-              <Area type="monotone" dataKey={useCustom? 'Range A':'This Period'} stroke="#0d9488" fill="url(#colorA)" strokeWidth={2} />
-              <Area type="monotone" dataKey={useCustom? 'Range B':'Previous Period'} stroke="#0891b2" fill="url(#colorB)" strokeWidth={2} />
+              <Tooltip
+                contentStyle={{ fontSize:'12px', borderRadius:'6px' }}
+                formatter={(val)=> [Number(val).toLocaleString(), 'Total']}
+                labelFormatter={(v)=> {
+                  const [y,m] = v.split('-');
+                  return new Date(Number(y), Number(m)-1, 1).toLocaleString(undefined,{ month:'long', year:'numeric' });
+                }}
+              />
+              <Area type="monotone" dataKey="Month" stroke="#0d9488" fill="url(#colorMonth)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         )}
