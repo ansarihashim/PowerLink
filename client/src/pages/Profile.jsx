@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext.jsx";
 import Card from "../components/ui/Card.jsx";
@@ -7,12 +8,15 @@ import ChangePasswordModal from "../components/profile/ChangePasswordModal.jsx";
 import api from "../api/http.js";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 import { prepareAvatar } from "../utils/image.js";
+import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 
 export default function Profile() {
   const { user, logout, updateUser } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   // 2FA removed per request
   
   // Profile form & avatar state
@@ -87,11 +91,7 @@ export default function Profile() {
     }
   };
 
-  const handleLogout = async () => {
-    if (confirm("Are you sure you want to logout?")) {
-      await logout();
-    }
-  };
+  const handleLogout = () => setShowLogoutConfirm(true);
 
   if (!user) {
     return (
@@ -300,6 +300,25 @@ export default function Profile() {
       <ChangePasswordModal 
         isOpen={showPasswordModal} 
         onClose={() => setShowPasswordModal(false)} 
+      />
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        title="Logout from all devices?"
+        message="This will sign you out of your current session."
+        confirmLabel="Logout"
+        cancelLabel="Cancel"
+        tone="danger"
+        onCancel={() => setShowLogoutConfirm(false)}
+        onConfirm={async () => {
+          try {
+            await logout();
+            navigate('/login');
+          } catch (err) {
+            // ignore for now
+          } finally {
+            setShowLogoutConfirm(false);
+          }
+        }}
       />
       {/* 2FA modal removed */}
     </div>

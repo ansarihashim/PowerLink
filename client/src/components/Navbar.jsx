@@ -14,16 +14,10 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
   const { push } = useToast();
   const [avatarBusy, setAvatarBusy] = useState(false);
   const [showRemove, setShowRemove] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const handleLogout = async () => {
-    if (confirm("Are you sure you want to logout?")) {
-      try {
-        await logout();
-        navigate('/login');
-      } catch (error) {
-        console.error('Logout failed:', error);
-      }
-    }
+  const handleLogout = () => {
+    setShowLogoutConfirm(true);
     setMenuOpen(false);
   };
 
@@ -192,6 +186,26 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
               updateUser({ avatar: prev });
               push({ type: 'error', title: 'Removal Failed', message: err.message });
             } finally { setAvatarBusy(false); }
+          }}
+        />
+        <ConfirmDialog
+          open={showLogoutConfirm}
+          title="Logout?"
+          message="You will be signed out of your session."
+          confirmLabel="Logout"
+          cancelLabel="Cancel"
+            tone="danger"
+          onCancel={() => setShowLogoutConfirm(false)}
+          onConfirm={async () => {
+            try {
+              await logout();
+              navigate('/login');
+            } catch (error) {
+              console.error('Logout failed:', error);
+              push({ type: 'error', title: 'Logout Failed', message: 'Please try again.' });
+            } finally {
+              setShowLogoutConfirm(false);
+            }
           }}
         />
       </div>
