@@ -16,6 +16,7 @@ export default function WorkerDetail() {
   const [form, setForm] = useState({ name: '', phone: '', address: '', joiningDate: '', aadhaarNumber:'', photo:'' });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState('loans');
 
   useEffect(() => {
     let alive = true;
@@ -60,81 +61,67 @@ export default function WorkerDetail() {
         {loading && <div className="text-sm text-slate-500">Loading...</div>}
         {error && <div className="mb-3 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
         {!loading && !error && data && !edit && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-              <Field label="ID" value={data._id} />
-              <Field label="Name" value={data.name} />
-              <Field label="Phone" value={data.phone} />
-              <Field label="Address" value={data.address} />
-              <Field label="Joining Date" value={data.joiningDate ? formatDMY(data.joiningDate) : ''} />
-              <Field label="Aadhaar" value={data.aadhaarNumber} />
-              {data.photo && (
-                <div className="sm:col-span-2">
-                  <div className="text-xs uppercase tracking-wide text-slate-500 mb-0.5">Photo</div>
-                  <img src={data.photo} alt="worker" className="h-28 w-28 object-cover rounded border border-teal-200" />
+          <div className="space-y-8">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+              <div className="flex gap-5">
+                <div className="h-24 w-24 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white flex items-center justify-center text-4xl font-semibold shadow-md ring-4 ring-teal-500/10 overflow-hidden">
+                  {data.photo ? <img src={data.photo} alt="avatar" className="h-full w-full object-cover" /> : (data.name?.[0]||'W').toUpperCase()}
                 </div>
-              )}
-              <Field label="Total Loan" value={(data.totalLoan ?? 0).toLocaleString()} />
-              <Field label="Remaining Loan" value={(data.remainingLoan ?? 0).toLocaleString()} />
+                <div>
+                  <h3 className="text-xl font-semibold text-slate-900 leading-tight tracking-tight">{data.name}</h3>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                    <MetaPill label="Phone" value={data.phone} />
+                    <MetaPill label="Aadhaar" value={data.aadhaarNumber} />
+                    <MetaPill label="Joined" value={data.joiningDate ? formatDMY(data.joiningDate) : ''} />
+                    <MetaPill label="ID" value={data._id.slice(0,8)+'…'} />
+                    {data.address && <MetaPill label="Address" value={data.address} wide />}
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 self-start">
+                <Button onClick={() => setEdit(true)}>Edit</Button>
+                <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
+                <Button variant="danger" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete'}</Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={() => setEdit(true)}>Edit</Button>
-              <Button variant="outline" onClick={() => navigate(-1)}>Back</Button>
-              <Button variant="danger" onClick={onDelete} disabled={deleting}>{deleting ? 'Deleting...' : 'Delete'}</Button>
+            {/* Summary Badges */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <SummaryStat label="Total Loan" value={(data.totalLoan ?? 0).toLocaleString()} tone="teal" />
+              <SummaryStat label="Remaining Loan" value={(data.remainingLoan ?? 0).toLocaleString()} tone="rose" />
+              <SummaryStat label="Loans" value={(data.loans?.length||0).toLocaleString()} tone="indigo" />
+              <SummaryStat label="Installments" value={(data.installments?.length||0).toLocaleString()} tone="emerald" />
             </div>
-            {/* Loans List */}
+            {/* Tabs */}
             <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Loans</h3>
-              {(!data.loans || data.loans.length===0) && <div className="text-xs text-slate-500">No loans</div>}
-              {data.loans && data.loans.length>0 && (
-                <div className="overflow-x-auto rounded border border-slate-200">
-                  <table className="min-w-full text-xs">
-                    <thead className="bg-teal-600 text-white">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Amount</th>
-                        <th className="px-3 py-2 text-left">Loan Date</th>
-                        <th className="px-3 py-2 text-left">Paid</th>
-                        <th className="px-3 py-2 text-left">Remaining</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {data.loans.map(l => (
-                        <tr key={l._id} className="bg-white hover:bg-teal-50">
-                          <td className="px-3 py-2">{(l.amount||0).toLocaleString()}</td>
-                          <td className="px-3 py-2">{l.loanDate ? formatDMY(l.loanDate) : ''}</td>
-                          <td className="px-3 py-2">{(l.paid||0).toLocaleString()}</td>
-                          <td className="px-3 py-2">{(l.remaining||Math.max(0,(l.amount||0)-(l.paid||0))).toLocaleString()}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-            {/* Installments */}
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 mb-3">Installments</h3>
-              {(!data.installments || data.installments.length===0) && <div className="text-xs text-slate-500">No installments</div>}
-              {data.installments && data.installments.length>0 && (
-                <div className="overflow-x-auto rounded border border-slate-200">
-                  <table className="min-w-full text-xs">
-                    <thead className="bg-teal-600 text-white">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Amount</th>
-                        <th className="px-3 py-2 text-left">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {data.installments.map(i => (
-                        <tr key={i._id} className="bg-white hover:bg-teal-50">
-                          <td className="px-3 py-2">{(i.amount||0).toLocaleString()}</td>
-                          <td className="px-3 py-2">{i.date ? formatDMY(i.date) : ''}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+              <div className="flex gap-6 border-b border-slate-200 text-sm">
+                {['loans','installments'].map(tab => (
+                  <button key={tab} onClick={()=> setActiveTab(tab)} className={`relative py-2 font-medium transition-colors ${activeTab===tab ? 'text-teal-600' : 'text-slate-500 hover:text-slate-700'}`}>
+                    {tab === 'loans' ? 'Loans' : 'Installments'}
+                    {activeTab===tab && <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-full" />}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-4">
+                {activeTab==='loans' && (
+                  <TableWrapper headers={['Amount','Loan Date','Paid','Remaining']} empty="No loans" rows={data.loans} renderRow={(l)=> (
+                    <tr key={l._id} className="bg-white hover:bg-teal-50">
+                      <td className="px-3 py-2">{(l.amount||0).toLocaleString()}</td>
+                      <td className="px-3 py-2">{l.loanDate ? formatDMY(l.loanDate) : ''}</td>
+                      <td className="px-3 py-2">{(l.paid||0).toLocaleString()}</td>
+                      <td className="px-3 py-2">{(l.remaining||Math.max(0,(l.amount||0)-(l.paid||0))).toLocaleString()}</td>
+                    </tr>
+                  )} />
+                )}
+                {activeTab==='installments' && (
+                  <TableWrapper headers={['Amount','Date']} empty="No installments" rows={data.installments} renderRow={(i)=> (
+                    <tr key={i._id} className="bg-white hover:bg-teal-50">
+                      <td className="px-3 py-2">{(i.amount||0).toLocaleString()}</td>
+                      <td className="px-3 py-2">{i.date ? formatDMY(i.date) : ''}</td>
+                    </tr>
+                  )} />
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -172,6 +159,70 @@ function Field({ label, value }) {
     <div>
       <div className="text-xs uppercase tracking-wide text-slate-500 mb-0.5">{label}</div>
       <div className="font-medium text-slate-800 break-all">{value || <span className="text-slate-400">—</span>}</div>
+    </div>
+  );
+}
+
+function MetaPill({ label, value, wide }) {
+  return (
+    <div
+      tabIndex={0}
+      className={`group relative inline-flex items-center gap-1 rounded-full bg-white/80 backdrop-blur-sm border border-teal-100 px-3 py-1.5 text-[11px] text-slate-600 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-md hover:shadow-teal-200/60 focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-1 hover:-translate-y-0.5 ${wide ? 'max-w-xs md:max-w-sm' : ''}`}
+      title={value}
+    >
+      <span className="pointer-events-none absolute inset-0 -z-10 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-teal-50 to-cyan-50 transition-opacity" />
+      <span className="relative z-10 font-medium text-slate-500">{label}:</span>
+      <span className={`relative z-10 font-semibold text-slate-800 tracking-wide truncate ${wide ? 'max-w-[9rem] md:max-w-[14rem]' : ''}`}>{value || '—'}</span>
+    </div>
+  );
+}
+
+function SummaryStat({ label, value, tone }) {
+  const palette = {
+    teal: { bgFrom:'from-white', bgTo:'to-teal-50', ring:'border-teal-100', iconBg:'bg-teal-100 text-teal-600' },
+    rose: { bgFrom:'from-white', bgTo:'to-rose-50', ring:'border-rose-100', iconBg:'bg-rose-100 text-rose-600' },
+    indigo: { bgFrom:'from-white', bgTo:'to-indigo-50', ring:'border-indigo-100', iconBg:'bg-indigo-100 text-indigo-600' },
+    emerald: { bgFrom:'from-white', bgTo:'to-emerald-50', ring:'border-emerald-100', iconBg:'bg-emerald-100 text-emerald-600' }
+  }[tone] || {};
+  function iconFor(){
+    if(label.toLowerCase().includes('total')) return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M6 10h12M9 14h6M10 18h4" strokeWidth="1.5"/></svg>
+    );
+    if(label.toLowerCase().includes('remaining')) return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9" strokeWidth="1.5"/><path d="M12 7v5l3 3" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    );
+    if(label.toLowerCase().includes('loan')) return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 8c-1.657 0-3 1.343-3 3h6c0-1.657-1.343-3-3-3z" strokeWidth="1.5"/><path d="M5 12h14v7a1 1 0 01-1 1H6a1 1 0 01-1-1v-7z" strokeWidth="1.5"/></svg>
+    );
+    if(label.toLowerCase().includes('install')) return (
+      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 6h16M4 12h16M4 18h10" strokeWidth="1.5"/></svg>
+    );
+    return <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14m7-7H5" strokeWidth="1.5"/></svg>;
+  }
+  return (
+    <div className={`group relative overflow-hidden rounded-xl border ${palette.ring||'border-slate-200'} bg-gradient-to-br ${palette.bgFrom||'from-white'} ${palette.bgTo||'to-slate-50'} p-4 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-teal-200/40 hover:scale-[1.015]`}> 
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_30%_20%,rgba(0,153,153,0.15),rgba(0,0,0,0)_60%)]" />
+      <div className="relative flex items-start justify-between">
+        <div className="text-[11px] uppercase tracking-wide text-slate-500 font-medium">{label}</div>
+        <div className={`h-6 w-6 rounded-md grid place-items-center ${palette.iconBg||'bg-slate-100 text-slate-500'} shadow-inner`}>{iconFor()}</div>
+      </div>
+      <div className="relative mt-2 text-xl font-semibold text-slate-900 tabular-nums tracking-tight">{value}</div>
+    </div>
+  );
+}
+
+function TableWrapper({ headers, rows, renderRow, empty }) {
+  if(!rows || rows.length===0) return <div className="text-xs text-slate-500">{empty}</div>;
+  return (
+    <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+      <table className="min-w-full text-xs">
+        <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-600 text-white">
+          <tr>{headers.map(h=> <th key={h} className="px-3 py-2 text-left font-medium whitespace-nowrap">{h}</th>)}</tr>
+        </thead>
+        <tbody className="divide-y divide-slate-100">
+          {rows.map(r => renderRow(r))}
+        </tbody>
+      </table>
     </div>
   );
 }
