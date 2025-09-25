@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { toYMD as fmtYMD } from "../../utils/date.js";
 
-// Helpers
+// Helper utilities
 function pad(n){ return n < 10 ? `0${n}` : `${n}`; }
 function toYMD(d){ return fmtYMD(d); }
 function fromYMD(str){
@@ -13,32 +13,32 @@ function fromYMD(str){
 }
 function toDMY(d){ return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`; }
 
-export default function DatePicker({ value, onChange, min, max, placeholder = "Select date", className = "", inline = false, fallbackViewDate }){
-  const [open, setOpen] = useState(false);      // mounted (popover mode)
-  const [show, setShow] = useState(false);      // animation state
+export default function DatePicker({ value, onChange, min, max, name, placeholder = "Select date", className = "", inline = false, fallbackViewDate, allowManual = true }) {
+  const [open, setOpen] = useState(false);
+  const [show, setShow] = useState(false);
   const selectedDate = fromYMD(value);
   const initialView = selectedDate || fromYMD(fallbackViewDate) || new Date();
   const [view, setView] = useState(initialView);
   const [focusDate, setFocusDate] = useState(initialView);
   const ref = useRef(null);
 
-  // Sync when value / fallbackViewDate changes
-  useEffect(()=>{
+  // Sync when external value changes
+  useEffect(()=> {
     const d = selectedDate || fromYMD(fallbackViewDate) || new Date();
     setView(new Date(d.getFullYear(), d.getMonth(), 1));
     setFocusDate(d);
   }, [value, fallbackViewDate]);
 
-  // Outside click / ESC for popover
-  useEffect(()=>{
-    if(inline || !open) return; // only when popover open
-    const closeAnimated = () => { setShow(false); setTimeout(()=> setOpen(false), 160); };
-    const onDown = (e)=> { if(ref.current && !ref.current.contains(e.target)) closeAnimated(); };
-    const onKey = (e)=> { if(e.key === 'Escape') closeAnimated(); };
+  // Outside click / Esc
+  useEffect(()=> {
+    if(inline || !open) return;
+    const close = () => { setShow(false); setTimeout(()=> setOpen(false), 160); };
+    const onDown = (e)=> { if(ref.current && !ref.current.contains(e.target)) close(); };
+    const onKey = (e)=> { if(e.key === 'Escape') close(); };
     document.addEventListener('mousedown', onDown);
     document.addEventListener('keydown', onKey);
     return ()=> { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
-  }, [inline, open]);
+  }, [open, inline]);
 
   const monthStart = useMemo(()=> new Date(view.getFullYear(), view.getMonth(), 1), [view]);
   const monthEnd   = useMemo(()=> new Date(view.getFullYear(), view.getMonth()+1, 0), [view]);
@@ -59,7 +59,29 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
     return cells;
   }, [monthStart, monthEnd, view]);
 
-  const displayLabel = selectedDate ? toDMY(selectedDate) : placeholder;
+  const displayDMY = selectedDate ? toDMY(selectedDate) : "";
+  const [manualText, setManualText] = useState(displayDMY);
+  useEffect(()=> { setManualText(displayDMY); }, [displayDMY]);
+
+  const parseManual = (txt) => {
+    if(!txt) return '';
+    const s = txt.trim();
+    // dd/mm/yyyy
+    if(/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)){
+      const [dd,mm,yyyy] = s.split('/').map(Number);
+      const d = new Date(yyyy, mm-1, dd);
+      if(d.getFullYear()===yyyy && d.getMonth()===mm-1 && d.getDate()===dd) return toYMD(d);
+      return '';
+    }
+    // yyyy-mm-dd
+    if(/^\d{4}-\d{2}-\d{2}$/.test(s)){
+      const [y,m,d] = s.split('-').map(Number);
+      const dt = new Date(y, m-1, d);
+      if(dt.getFullYear()===y && dt.getMonth()===m-1 && dt.getDate()===d) return toYMD(dt);
+      return '';
+    }
+    return '';
+  };
 
   const isDisabled = (d) => {
     if(min){ const md = fromYMD(min); if(md && d < md) return true; }
@@ -67,10 +89,16 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
     return false;
   };
 
+  const emitChange = (ymd) => {
+    const evt = { type:'change', target:{ value: ymd, name }, currentTarget:{ value: ymd, name }, preventDefault:()=>{}, stopPropagation:()=>{} };
+    onChange?.(evt);
+  };
+
   const pick = (d) => {
     if(isDisabled(d)) return;
     const ymd = toYMD(d);
-    onChange?.({ target: { value: ymd } });
+    emitChange(ymd);
+    setManualText(toDMY(d));
     if(!inline){ setShow(false); setTimeout(()=> setOpen(false), 160); }
   };
 
@@ -129,8 +157,8 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
       </div>
       {!inline && (
         <div className="mt-1 flex items-center justify-between px-1 text-xs">
-          <button type="button" className="text-teal-700 hover:underline" onClick={()=> { onChange?.({ target:{ value:'' }}); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Clear</button>
-          <button type="button" className="text-teal-700 hover:underline" onClick={()=> { const now=new Date(); const y=now.getFullYear(); const m=pad(now.getMonth()+1); const d=pad(now.getDate()); onChange?.({ target:{ value:`${y}-${m}-${d}` }}); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Today</button>
+          <button type="button" className="text-teal-700 hover:underline" onClick={()=> { emitChange(''); setManualText(''); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Clear</button>
+          <button type="button" className="text-teal-700 hover:underline" onClick={()=> { const now=new Date(); emitChange(toYMD(now)); setManualText(toDMY(now)); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Today</button>
         </div>
       )}
     </div>
@@ -138,28 +166,22 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
 
   if(inline) return <div className={`rounded-lg border border-teal-100 bg-white p-2 ${className}`}>{Calendar}</div>;
 
-  // Portal positioning state
-  const [portalStyle, setPortalStyle] = useState({ top: 0, left: 0, dropUp: false, width: 288 });
-
+  // Portal positioning
+  const [portalStyle, setPortalStyle] = useState({ top:0, left:0, dropUp:false, width:288 });
   useEffect(()=> {
     if(!open || inline) return;
     const place = () => {
       const trigger = ref.current; if(!trigger) return;
       const rect = trigger.getBoundingClientRect();
-      const width = 288; // calendar width
-      // Horizontal clamp with 8px padding
+      const width = 288;
       let left = rect.left;
-      if (left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - width);
-      if (left < 8) left = 8;
-      // Vertical decide direction
+      if(left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - width);
+      if(left < 8) left = 8;
       const spaceBelow = window.innerHeight - rect.bottom;
       const estHeight = 340;
       let top = rect.bottom + 6; let dropUp = false;
-      if (spaceBelow < estHeight && rect.top > estHeight) { // open up
-        top = rect.top - 6 - estHeight;
-        dropUp = true;
-      }
-      setPortalStyle({ top: Math.round(top), left: Math.round(left), dropUp, width });
+      if(spaceBelow < estHeight && rect.top > estHeight){ top = rect.top - 6 - estHeight; dropUp = true; }
+      setPortalStyle({ top:Math.round(top), left:Math.round(left), dropUp, width });
     };
     place();
     window.addEventListener('resize', place);
@@ -167,25 +189,55 @@ export default function DatePicker({ value, onChange, min, max, placeholder = "S
     return () => { window.removeEventListener('resize', place); window.removeEventListener('scroll', place, true); };
   }, [open, inline]);
 
+  const triggerClasses = "w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 transition-all duration-200";
+
   return (
     <div ref={ref} className={`relative inline-block text-left ${className}`}>
-      <button
-        type="button"
-        onClick={()=> {
-          if(!open){ setOpen(true); setShow(false); requestAnimationFrame(()=> setShow(true)); }
-          else { setShow(false); setTimeout(()=> setOpen(false), 160); }
-        }}
-        className="w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-left text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:outline-none focus:ring-2 focus:ring-teal-200 focus:border-teal-400 transition-all duration-200"
-        aria-haspopup="dialog"
-        aria-expanded={open}
-      >
-        <span className={selectedDate ? 'text-slate-800' : 'text-slate-400'}>{displayLabel}</span>
-      </button>
-      {open && !inline && createPortal(
-        <div
-          className={`z-[9999] fixed transform transition-all duration-150 ${portalStyle.dropUp ? 'origin-bottom-left' : 'origin-top-left'} ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          style={{ top: portalStyle.top, left: portalStyle.left, width: portalStyle.width, maxWidth: 'calc(100vw - 16px)' }}
+      {allowManual ? (
+        <div className="relative">
+          <input
+            type="text"
+            value={manualText}
+            placeholder={placeholder}
+            onChange={(e)=> {
+              const txt = e.target.value;
+              setManualText(txt);
+              if(!txt){ emitChange(''); return; }
+              const ymd = parseManual(txt);
+              if(ymd && ymd !== value){ emitChange(ymd); }
+            }}
+            onBlur={()=> {
+              if(!manualText){ emitChange(''); return; }
+              const ymd = parseManual(manualText);
+              if(ymd && ymd !== value) emitChange(ymd);
+              if(!ymd){ // revert to last valid
+                if(value) setManualText(displayDMY); else setManualText('');
+              }
+            }}
+            className={`${triggerClasses} pr-10 ${selectedDate ? 'text-slate-800' : 'text-slate-400'}`}
+          />
+          <button
+            type="button"
+            aria-label="Open calendar"
+            onClick={()=> { if(!open){ setOpen(true); setShow(false); requestAnimationFrame(()=> setShow(true)); } else { setShow(false); setTimeout(()=> setOpen(false), 160); } }}
+            className="absolute inset-y-0 right-0 flex items-center px-2 text-slate-500 hover:text-teal-600"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1z" /><path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM7 11a1 1 0 011-1h.01a1 1 0 110 2H8a1 1 0 01-1-1zm4 0a1 1 0 011-1h.01a1 1 0 110 2H12a1 1 0 01-1-1zm4 0a1 1 0 011-1h.01a1 1 0 110 2H16a1 1 0 01-1-1z" clipRule="evenodd"/></svg>
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={()=> { if(!open){ setOpen(true); setShow(false); requestAnimationFrame(()=> setShow(true)); } else { setShow(false); setTimeout(()=> setOpen(false), 160); } }}
+          className={`${triggerClasses} text-left`}
+          aria-haspopup="dialog"
+          aria-expanded={open}
         >
+          <span className={selectedDate ? 'text-slate-800' : 'text-slate-400'}>{displayDMY || placeholder}</span>
+        </button>
+      )}
+      {open && !inline && createPortal(
+        <div className={`z-[9999] fixed transform transition-all duration-150 ${portalStyle.dropUp ? 'origin-bottom-left' : 'origin-top-left'} ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`} style={{ top: portalStyle.top, left: portalStyle.left, width: portalStyle.width, maxWidth: 'calc(100vw - 16px)' }}>
           {Calendar}
         </div>, document.body)
       }

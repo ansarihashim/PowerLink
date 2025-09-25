@@ -6,8 +6,17 @@ export default function ThemedCalendarInput({ value, onChange, label, className 
   const id = useId();
   // DatePicker already emits e.target.value (YYYY-MM-DD). We forward along with name for form parity.
   const handleChange = (e) => {
-    const val = e.target.value; // '' or YYYY-MM-DD
-    onChange?.({ target: { name, value: val } });
+    if(!e || !e.target) return;
+    const val = e.target.value;
+    // Build a synthetic event closely resembling a native input change event
+    const evt = {
+      type: 'change',
+      target: { name, value: val },
+      currentTarget: { name, value: val },
+      preventDefault: ()=>{},
+      stopPropagation: ()=>{}
+    };
+    onChange?.(evt);
   };
 
   return (
@@ -22,6 +31,7 @@ export default function ThemedCalendarInput({ value, onChange, label, className 
         onChange={handleChange}
         min={min}
         max={max}
+        name={name}
         placeholder={placeholder || 'Select date'}
       />
     </div>

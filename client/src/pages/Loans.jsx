@@ -63,10 +63,11 @@ export default function Loans() {
 
   function openEdit(loan){
     setEditing(loan);
-  const ld = loan.loanDate?.slice(0,10) || '';
-  let dd = loan.dueDate?.slice(0,10) || '';
-  if(ld && (!dd || dd < ld)) dd = plusDays(ld,30);
-  setEditForm({ amount: loan.amount, loanDate: ld, dueDate: dd, notes: loan.notes || '', dueEdited:false });
+    const ld = loan.loanDate?.slice(0,10) || '';
+    let dd = loan.dueDate?.slice(0,10) || '';
+    if(ld && (!dd || dd < ld)) dd = plusDays(ld,30);
+    // Preserve existing form dueEdited if editing same loan again so we don't auto-shift user override
+    setEditForm(f => ({ amount: loan.amount, loanDate: ld, dueDate: dd, notes: loan.notes || '', dueEdited: (editing && editing._id === loan._id) ? f.dueEdited : false }));
   }
 
   function openCreate(){
@@ -91,7 +92,8 @@ export default function Loans() {
       await api.loans.create(payload);
       push({ type:'success', title:'Loan Added', message:'New loan created.' });
       setCreating(false); setCreateSaving(false);
-      queryClient.invalidateQueries({ queryKey:['loans'] });
+      // Invalidate all loans queries (different pages / filters)
+      queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'loans' });
     } catch(err){
       push({ type:'error', title:'Create Failed', message: err.message });
       setCreateSaving(false);
@@ -105,9 +107,18 @@ export default function Loans() {
   if(editForm.dueDate < editForm.loanDate) throw new Error('Due date before loan date');
   const payload = { amount: Number(editForm.amount), loanDate: editForm.loanDate, dueDate: editForm.dueDate, notes: editForm.notes };
       await api.loans.update(editing.id || editing._id, payload);
+      // Optimistically update each cached loans query so user sees new due date immediately
+      const cacheKeys = queryClient.getQueriesData({ queryKey:['loans'] });
+      cacheKeys.forEach(([key, val]) => {
+        if(!val) return;
+        if(val.data){
+          const updated = { ...val, data: val.data.map(l => l._id === (editing.id||editing._id) ? { ...l, ...payload } : l) };
+          queryClient.setQueryData(key, updated);
+        }
+      });
       push({ type:'success', title:'Loan Updated', message:'Changes saved.' });
       setEditing(null); setSaving(false);
-      queryClient.invalidateQueries({ queryKey: ['loans'] });
+      queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'loans' });
     } catch(err){
       push({ type:'error', title:'Update Failed', message: err.message });
       setSaving(false);
@@ -119,7 +130,7 @@ export default function Loans() {
       await api.loans.remove(deleteId);
       push({ type:'success', title:'Loan Deleted', message:'Loan removed.' });
       setDeleteId(null);
-      queryClient.invalidateQueries({ queryKey: ['loans'] });
+      queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'loans' });
     } catch(err){
       push({ type:'error', title:'Delete Failed', message: err.message });
       setDeleteId(null);
