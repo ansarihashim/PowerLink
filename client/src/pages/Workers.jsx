@@ -34,7 +34,7 @@ export default function Workers() {
 
   // Add/Edit modal state
   const [editing, setEditing] = useState(null); // worker object or 'new'
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', joiningDate: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', joiningDate: '', aadhaarNumber: '', photo: '' });
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const { push } = useToast();
@@ -77,7 +77,7 @@ export default function Workers() {
   function openAdd(){
     const today = new Date().toISOString().slice(0,10);
     setEditing('new');
-    setEditForm({ name: '', phone: '', address: '', joiningDate: today });
+  setEditForm({ name: '', phone: '', address: '', joiningDate: today, aadhaarNumber:'', photo:'' });
   }
 
   async function saveEdit(e){
@@ -85,12 +85,13 @@ export default function Workers() {
     if (!editing) return;
     setSaving(true);
     try {
-      const payload = { ...editForm };
+  const payload = { ...editForm };
       // Front-end validation to avoid 400 (Missing fields)
       if (!payload.name.trim()) throw new Error('Name required');
       if (!payload.phone.trim()) throw new Error('Phone required');
       if (!payload.address.trim()) throw new Error('Address required');
-      if (!payload.joiningDate) throw new Error('Joining date required');
+  if (!payload.joiningDate) throw new Error('Joining date required');
+  if (!payload.aadhaarNumber || payload.aadhaarNumber.length < 12) throw new Error('Valid Aadhaar required');
       if(editing === 'new') {
         await api.workers.create(payload);
         push({ type: 'success', title: 'Worker Added', message: 'New worker created.' });
@@ -128,7 +129,8 @@ export default function Workers() {
       { key: 'name', header: 'Name' },
       { key: 'phone', header: 'Phone' },
       { key: 'address', header: 'Address' },
-      { key: 'joiningDate', header: 'Joining Date' },
+  { key: 'joiningDate', header: 'Joining Date' },
+  { key: 'aadhaarNumber', header: 'Aadhaar' },
       { key: 'totalLoan', header: 'Loan Taken' },
       { key: 'remainingLoan', header: 'Remaining Loan Amount' },
     ];
@@ -180,7 +182,7 @@ export default function Workers() {
   <table className="min-w-full divide-y divide-gray-200 text-sm transition-opacity duration-200" style={{ opacity: loading && rows.length ? 0.55 : 1 }}>
           <thead className="bg-gradient-to-r from-teal-500 via-cyan-600 to-teal-700 text-white">
             <tr className="text-white">
-              {['ID','Name','Phone Number','Address','Joining Date','Loan Taken','Remaining Loan Amount','Actions'].map(h=> (
+              {['ID','Name','Phone Number','Address','Joining Date','Aadhaar','Loan Taken','Remaining Loan Amount','Actions'].map(h=> (
                 <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -206,6 +208,7 @@ export default function Workers() {
                 <td className="px-4 py-3">{w.phone}</td>
                 <td className="px-4 py-3">{w.address}</td>
                 <td className="px-4 py-3">{w.joiningDate ? formatDMY(w.joiningDate) : ''}</td>
+                <td className="px-4 py-3">{w.aadhaarNumber || ''}</td>
                 <td className="px-4 py-3">{Number(w.totalLoan||0).toLocaleString()}</td>
                 <td className="px-4 py-3">{Number(w.remainingLoan||0).toLocaleString()}</td>
                 <td className="px-4 py-2 text-xs">
@@ -253,6 +256,21 @@ export default function Workers() {
                 onChange={(e)=> setEditForm(f=>({...f, joiningDate:e.target.value}))}
                 className="w-full"
               />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Aadhaar Number<span className="text-rose-500"> *</span></label>
+              <input value={editForm.aadhaarNumber} onChange={e=>setEditForm(f=>({...f,aadhaarNumber:e.target.value.trim()}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent font-mono tracking-wider" placeholder="12-digit" maxLength={12} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">Photo</label>
+              {editForm.photo && <img src={editForm.photo} alt="preview" className="h-16 w-16 object-cover rounded-lg border border-teal-200 shadow-sm mb-2" />}
+              <button type="button" onClick={()=> document.getElementById('worker-photo-input')?.click()} className="inline-flex items-center gap-1 rounded-md bg-teal-600 text-white px-3 py-1.5 text-xs font-medium shadow hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="1.5" d="M12 5v14m7-7H5" /></svg>
+                {editForm.photo ? 'Change Photo' : 'Upload Photo'}
+              </button>
+              <input id="worker-photo-input" hidden type="file" accept="image/*" onChange={(e)=> { const file=e.target.files?.[0]; if(!file) return; const reader=new FileReader(); reader.onload=ev=> setEditForm(f=>({...f, photo: ev.target.result})); reader.readAsDataURL(file); }} />
             </div>
           </div>
           <div>

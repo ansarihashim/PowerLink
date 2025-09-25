@@ -91,11 +91,15 @@ export async function getWorker(req, res) {
 
 export async function createWorker(req, res) {
   try {
-    const { name, phone, address, joiningDate } = req.body;
-    if (!name || !phone || !address || !joiningDate) return error(res, 'Missing fields', 'VALIDATION_ERROR', 400);
+  const { name, phone, address, joiningDate, photo, aadhaarNumber } = req.body;
+  if (!name || !phone || !address || !joiningDate || !aadhaarNumber) return error(res, 'Missing fields', 'VALIDATION_ERROR', 400);
     const exists = await Worker.findOne({ phone });
     if (exists) return error(res, 'Phone already exists', 'PHONE_EXISTS', 409);
-    const worker = await Worker.create({ name, phone, address, joiningDate });
+    if (aadhaarNumber) {
+      const aExists = await Worker.findOne({ aadhaarNumber });
+      if (aExists) return error(res, 'Aadhaar already exists', 'AADHAAR_EXISTS', 409);
+    }
+    const worker = await Worker.create({ name, phone, address, joiningDate, photo, aadhaarNumber });
     return created(res, { worker });
   } catch (e) { return error(res, e.message); }
 }
@@ -103,8 +107,17 @@ export async function createWorker(req, res) {
 export async function updateWorker(req, res) {
   try {
     if (!mongoose.isValidObjectId(req.params.id)) return error(res, 'Invalid id', 'INVALID_ID', 400);
-    const { name, phone, address, joiningDate } = req.body;
-    const worker = await Worker.findByIdAndUpdate(req.params.id, { name, phone, address, joiningDate }, { new: true });
+  const { name, phone, address, joiningDate, photo, aadhaarNumber } = req.body;
+    // Uniqueness checks when updating
+    if (phone) {
+      const phoneExists = await Worker.findOne({ phone, _id: { $ne: req.params.id } });
+      if (phoneExists) return error(res, 'Phone already exists', 'PHONE_EXISTS', 409);
+    }
+    if (aadhaarNumber) {
+      const aExists = await Worker.findOne({ aadhaarNumber, _id: { $ne: req.params.id } });
+      if (aExists) return error(res, 'Aadhaar already exists', 'AADHAAR_EXISTS', 409);
+    } else return error(res, 'Missing fields', 'VALIDATION_ERROR', 400);
+    const worker = await Worker.findByIdAndUpdate(req.params.id, { name, phone, address, joiningDate, photo, aadhaarNumber }, { new: true });
     if (!worker) return error(res, 'Worker not found', 'NOT_FOUND', 404);
     return ok(res, { worker });
   } catch (e) { return error(res, e.message); }

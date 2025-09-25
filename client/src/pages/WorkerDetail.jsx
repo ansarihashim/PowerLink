@@ -13,7 +13,7 @@ export default function WorkerDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [edit, setEdit] = useState(false);
-  const [form, setForm] = useState({ name: '', phone: '', address: '', joiningDate: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', joiningDate: '', aadhaarNumber:'', photo:'' });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -21,7 +21,7 @@ export default function WorkerDetail() {
     let alive = true;
     setLoading(true); setError('');
     api.workers.get(id)
-      .then(r => { if (!alive) return; setData(r.worker); setForm({ name: r.worker.name||'', phone: r.worker.phone||'', address: r.worker.address||'', joiningDate: r.worker.joiningDate?.slice(0,10)||'' }); })
+  .then(r => { if (!alive) return; setData(r.worker); setForm({ name: r.worker.name||'', phone: r.worker.phone||'', address: r.worker.address||'', joiningDate: r.worker.joiningDate?.slice(0,10)||'', aadhaarNumber: r.worker.aadhaarNumber || '', photo: r.worker.photo || '' }); })
       .catch(e => { if (!alive) return; setError(e.message); })
       .finally(()=> alive && setLoading(false));
     return () => { alive = false; };
@@ -43,7 +43,7 @@ export default function WorkerDetail() {
   };
 
   const onDelete = async () => {
-    if (!confirm('Delete this worker? This cannot be undone.')) return;
+  if (!confirm('Delete this worker? This cannot be undone.')) return; // TODO: could use themed dialog
     setDeleting(true);
     try { await api.workers.remove(id); navigate('/workers'); }
     catch (err) { setError(err.message); }
@@ -67,6 +67,13 @@ export default function WorkerDetail() {
               <Field label="Phone" value={data.phone} />
               <Field label="Address" value={data.address} />
               <Field label="Joining Date" value={data.joiningDate ? formatDMY(data.joiningDate) : ''} />
+              <Field label="Aadhaar" value={data.aadhaarNumber} />
+              {data.photo && (
+                <div className="sm:col-span-2">
+                  <div className="text-xs uppercase tracking-wide text-slate-500 mb-0.5">Photo</div>
+                  <img src={data.photo} alt="worker" className="h-28 w-28 object-cover rounded border border-teal-200" />
+                </div>
+              )}
               <Field label="Total Loan" value={(data.totalLoan ?? 0).toLocaleString()} />
               <Field label="Remaining Loan" value={(data.remainingLoan ?? 0).toLocaleString()} />
             </div>
@@ -138,10 +145,20 @@ export default function WorkerDetail() {
               <Input label="Phone" name="phone" value={form.phone} onChange={onChange} />
               <Input label="Address" name="address" value={form.address} onChange={onChange} className="sm:col-span-2" />
               <ThemedCalendarInput label="Joining Date" name="joiningDate" value={form.joiningDate} onChange={onChange} />
+              <Input label="Aadhaar Number *" name="aadhaarNumber" value={form.aadhaarNumber} onChange={(e)=> setForm(f=>({...f, aadhaarNumber: e.target.value.trim()}))} />
+              <div>
+                <div className="text-xs uppercase tracking-wide text-slate-500 mb-1">Photo</div>
+                {form.photo && <img src={form.photo} alt="preview" className="h-24 w-24 object-cover rounded-lg border border-teal-200 shadow-sm mb-2" />}
+                <button type="button" onClick={()=> document.getElementById('wd-photo')?.click()} className="inline-flex items-center gap-1 rounded-md bg-teal-600 text-white px-3 py-1.5 text-xs font-medium shadow hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeWidth="1.5" d="M12 5v14m7-7H5" /></svg>
+                  {form.photo ? 'Change Photo' : 'Upload Photo'}
+                </button>
+                <input id="wd-photo" hidden type="file" accept="image/*" onChange={(e)=> { const file=e.target.files?.[0]; if(!file) return; const reader=new FileReader(); reader.onload=ev=> setForm(f=>({...f, photo: ev.target.result})); reader.readAsDataURL(file); }} />
+              </div>
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
-              <Button variant="outline" type="button" onClick={() => { setEdit(false); setForm({ name: data.name, phone: data.phone, address: data.address, joiningDate: data.joiningDate?.slice(0,10)||'' }); }}>Cancel</Button>
+              <Button variant="outline" type="button" onClick={() => { setEdit(false); setForm({ name: data.name, phone: data.phone, address: data.address, joiningDate: data.joiningDate?.slice(0,10)||'', aadhaarNumber: data.aadhaarNumber||'', photo: data.photo||'' }); }}>Cancel</Button>
             </div>
           </form>
         )}
