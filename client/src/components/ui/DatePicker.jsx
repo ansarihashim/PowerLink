@@ -61,7 +61,18 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
 
   const displayDMY = selectedDate ? toDMY(selectedDate) : "";
   const [manualText, setManualText] = useState(displayDMY);
-  useEffect(()=> { setManualText(displayDMY); }, [displayDMY]);
+  const pendingCommitRef = useRef(null); // holds a ymd string just emitted but not yet reflected in props
+  useEffect(()=> {
+    // If we have a pending commit and the selectedDate now matches it, clear the pending flag.
+    const currentYMD = selectedDate ? toYMD(selectedDate) : '';
+    if(pendingCommitRef.current && pendingCommitRef.current === currentYMD){
+      pendingCommitRef.current = null;
+    }
+    // Only sync manual text if NOT waiting for a parent commit we already displayed.
+    if(!pendingCommitRef.current){
+      setManualText(displayDMY);
+    }
+  }, [displayDMY, selectedDate]);
 
   const parseManual = (txt) => {
     if(!txt) return '';
@@ -98,6 +109,7 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
     if(isDisabled(d)) return;
     const ymd = toYMD(d);
     emitChange(ymd);
+    pendingCommitRef.current = ymd; // mark that we're awaiting parent prop update
     setManualText(toDMY(d));
     if(!inline){ setShow(false); setTimeout(()=> setOpen(false), 160); }
   };
@@ -146,7 +158,7 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
             <button
               key={ymd}
               type="button"
-              onClick={()=> pick(d)}
+              onMouseDown={(e)=> { e.preventDefault(); e.stopPropagation(); pick(d); }}
               disabled={disabled}
               className={`rounded-md py-1.5 text-sm transition-colors hover:bg-teal-50 hover:text-teal-700 ${other ? 'text-slate-400' : 'text-slate-700'} ${isSel ? 'bg-teal-100 text-teal-800 ring-1 ring-teal-300' : ''} ${isFocus && !isSel ? 'ring-1 ring-teal-300' : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
             >
@@ -157,8 +169,8 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
       </div>
       {!inline && (
         <div className="mt-1 flex items-center justify-between px-1 text-xs">
-          <button type="button" className="text-teal-700 hover:underline" onClick={()=> { emitChange(''); setManualText(''); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Clear</button>
-          <button type="button" className="text-teal-700 hover:underline" onClick={()=> { const now=new Date(); emitChange(toYMD(now)); setManualText(toDMY(now)); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Today</button>
+          <button type="button" className="text-teal-700 hover:underline" onMouseDown={(e)=> { e.preventDefault(); e.stopPropagation(); emitChange(''); setManualText(''); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Clear</button>
+          <button type="button" className="text-teal-700 hover:underline" onMouseDown={(e)=> { e.preventDefault(); e.stopPropagation(); const now=new Date(); emitChange(toYMD(now)); setManualText(toDMY(now)); setShow(false); setTimeout(()=> setOpen(false), 160); }}>Today</button>
         </div>
       )}
     </div>
@@ -202,14 +214,14 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
             onChange={(e)=> {
               const txt = e.target.value;
               setManualText(txt);
-              if(!txt){ emitChange(''); return; }
+              if(!txt){ emitChange(''); pendingCommitRef.current=''; return; }
               const ymd = parseManual(txt);
-              if(ymd && ymd !== value){ emitChange(ymd); }
+              if(ymd && ymd !== value){ emitChange(ymd); pendingCommitRef.current = ymd; }
             }}
             onBlur={()=> {
               if(!manualText){ emitChange(''); return; }
               const ymd = parseManual(manualText);
-              if(ymd && ymd !== value) emitChange(ymd);
+              if(ymd && ymd !== value){ emitChange(ymd); pendingCommitRef.current = ymd; }
               if(!ymd){ // revert to last valid
                 if(value) setManualText(displayDMY); else setManualText('');
               }
