@@ -321,7 +321,7 @@ export default function Loans() {
         onConfirm={confirmDelete}
       />
 
-  <Modal isOpen={creating} onClose={()=> !createSaving && setCreating(false)} title="Add Loan" size="sm" height="tall">
+  <Modal isOpen={creating} onClose={()=> !createSaving && setCreating(false)} title="Add Loan" size="md" height="tall">
         {creating && (
           <form onSubmit={saveCreate} className="space-y-4 text-sm">
             <div>

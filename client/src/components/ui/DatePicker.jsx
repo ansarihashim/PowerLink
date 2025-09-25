@@ -21,6 +21,8 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
   const [view, setView] = useState(initialView);
   const [focusDate, setFocusDate] = useState(initialView);
   const ref = useRef(null);
+  const calendarIdealHeight = 340; // baseline design height
+  const [calendarMaxHeight, setCalendarMaxHeight] = useState(calendarIdealHeight);
 
   // Sync when external value changes
   useEffect(()=> {
@@ -135,7 +137,12 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
   };
 
   const Calendar = (
-    <div className={`${inline ? '' : 'mt-1'} w-72 rounded-lg border border-teal-100 bg-white p-2 shadow-lg shadow-teal-200/40`} tabIndex={0} onKeyDown={handleKeyDown}>
+    <div
+      className={`${inline ? '' : 'mt-1'} w-72 rounded-lg border border-teal-100 bg-white p-2 shadow-lg shadow-teal-200/40 flex flex-col`}
+      style={{ maxHeight: calendarMaxHeight, overscrollBehavior: 'contain' }}
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
+    >
       <div className="flex items-center justify-between px-1 py-2">
         <button type="button" className="rounded p-1 hover:bg-teal-50" onClick={()=> setView(new Date(view.getFullYear(), view.getMonth()-1, 1))} aria-label="Previous month">
           <svg className="h-4 w-4 text-slate-600" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12.78 15.53a.75.75 0 01-1.06 0l-5-5a.75.75 0 010-1.06l5-5a.75.75 0 111.06 1.06L8.31 10l4.47 4.47a.75.75 0 010 1.06z" clipRule="evenodd"/></svg>
@@ -148,7 +155,7 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
       <div className="grid grid-cols-7 gap-1 px-1 text-center text-[11px] text-slate-500">
         {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d => <div key={d} className="py-1">{d}</div>)}
       </div>
-      <div className="mt-1 grid grid-cols-7 gap-1 px-1 pb-1">
+      <div className="mt-1 grid grid-cols-7 gap-1 px-1 pb-1 flex-shrink overflow-y-auto">
         {days.map(({ d, other }) => {
           const ymd = toYMD(d);
           const isSel = selectedDate && toYMD(selectedDate) === ymd;
@@ -189,10 +196,21 @@ export default function DatePicker({ value, onChange, min, max, name, placeholde
       let left = rect.left;
       if(left + width > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 8 - width);
       if(left < 8) left = 8;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const estHeight = 340;
-      let top = rect.bottom + 6; let dropUp = false;
-      if(spaceBelow < estHeight && rect.top > estHeight){ top = rect.top - 6 - estHeight; dropUp = true; }
+      const availHeight = window.innerHeight - 16; // viewport minus margins
+      const calHeight = Math.min(calendarIdealHeight, availHeight);
+      setCalendarMaxHeight(calHeight);
+      const spaceBelow = window.innerHeight - rect.bottom - 8; // margin below
+      let top; let dropUp=false;
+      if(spaceBelow >= calHeight || rect.top < calHeight){
+        // Prefer below if enough space OR not enough space above either
+        top = Math.min(rect.bottom + 6, window.innerHeight - 8 - calHeight);
+      } else {
+        // Drop up
+        dropUp = true;
+        top = Math.max(8, rect.top - 6 - calHeight);
+      }
+      if(top < 8) top = 8;
+      if(top + calHeight > window.innerHeight - 8) top = window.innerHeight - 8 - calHeight;
       setPortalStyle({ top:Math.round(top), left:Math.round(left), dropUp, width });
     };
     place();
