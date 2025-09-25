@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Card from '../components/ui/Card.jsx';
+import ThemedCalendarInput from '../components/ui/ThemedCalendarInput.jsx';
 import Button from '../components/ui/Button.jsx';
 import { formatDMY } from '../utils/date.js';
 import { api } from '../api/http.js';
@@ -136,7 +137,7 @@ export default function WorkerDetail() {
               <Input label="Name" name="name" value={form.name} onChange={onChange} />
               <Input label="Phone" name="phone" value={form.phone} onChange={onChange} />
               <Input label="Address" name="address" value={form.address} onChange={onChange} className="sm:col-span-2" />
-              <Input label="Joining Date" type="date" name="joiningDate" value={form.joiningDate} onChange={onChange} />
+              <ThemedCalendarInput label="Joining Date" name="joiningDate" value={form.joiningDate} onChange={onChange} />
             </div>
             <div className="flex gap-2">
               <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>

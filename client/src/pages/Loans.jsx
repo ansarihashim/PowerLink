@@ -5,6 +5,7 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { api } from "../api/http.js";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { formatDMY } from "../utils/date.js";
@@ -226,7 +227,7 @@ export default function Loans() {
         </div>
       </div>
 
-      <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title="Edit Loan" size="sm">
+  <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title="Edit Loan" size="sm" height="tall">
         {editing && (
           <form onSubmit={saveEdit} className="space-y-4 text-sm">
             <div>
@@ -235,7 +236,11 @@ export default function Loans() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
-              <input type="date" value={editForm.loanDate} onChange={e=>setEditForm(f=>({...f,loanDate:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <ThemedCalendarInput
+                value={editForm.loanDate}
+                onChange={(e)=> setEditForm(f=>({...f, loanDate:e.target.value}))}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>
@@ -258,7 +263,7 @@ export default function Loans() {
         onConfirm={confirmDelete}
       />
 
-      <Modal isOpen={creating} onClose={()=> !createSaving && setCreating(false)} title="Add Loan" size="sm">
+  <Modal isOpen={creating} onClose={()=> !createSaving && setCreating(false)} title="Add Loan" size="sm" height="tall">
         {creating && (
           <form onSubmit={saveCreate} className="space-y-4 text-sm">
             <div>
@@ -276,7 +281,11 @@ export default function Loans() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Loan Date</label>
-              <input type="date" value={createForm.loanDate} onChange={e=>setCreateForm(f=>({...f,loanDate:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <ThemedCalendarInput
+                value={createForm.loanDate}
+                onChange={(e)=> setCreateForm(f=>({...f, loanDate:e.target.value}))}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Notes</label>

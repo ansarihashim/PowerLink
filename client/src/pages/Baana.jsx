@@ -6,6 +6,7 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { downloadCSV } from "../utils/export.js";
 import Modal from "../components/ui/Modal.jsx";
 import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
@@ -133,12 +134,16 @@ export default function Baana() {
           <Button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 disabled:opacity-50">Next</Button>
         </div>
       </div>
-      <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Baana Record' : 'Edit Baana Record'} size="sm">
+  <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Baana Record' : 'Edit Baana Record'} size="sm" height="tall">
         {editing && (
           <form onSubmit={save} className="space-y-4 text-sm">
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
-              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <ThemedCalendarInput
+                value={form.date}
+                onChange={(e)=> setForm(f=>({...f, date:e.target.value}))}
+                className="w-full"
+              />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Number of Sacks</label>

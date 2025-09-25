@@ -28,11 +28,26 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
   useEffect(() => {
     if (!open) return;
     const place = () => {
-      const el = ref.current; if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const top = Math.round(rect.bottom + 6);
-      const left = Math.round(Math.min(rect.left, window.innerWidth - 340));
-      setPortalStyle({ top, left, width: Math.round(rect.width) });
+      const trigger = ref.current; if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const desiredWidth = Math.max(320, rect.width);
+      // Horizontal: clamp within viewport with 8px padding
+      let left = rect.left;
+      if (left + desiredWidth > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - 8 - desiredWidth);
+      }
+      if (left < 8) left = 8;
+      // Vertical: decide drop direction
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const estimatedHeight = 420; // approximate range picker height
+      let top = rect.bottom + 6;
+      let dropUp = false;
+      if (spaceBelow < estimatedHeight && rect.top > estimatedHeight) {
+        // open upwards
+        top = rect.top - 6 - estimatedHeight;
+        dropUp = true;
+      }
+      setPortalStyle({ top: Math.round(top), left: Math.round(left), width: Math.round(rect.width), dropUp });
     };
     place();
     window.addEventListener('resize', place);
@@ -70,8 +85,8 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
       )}
       {open && createPortal(
         <div
-          className={`z-[9999] rounded-lg border border-teal-100 bg-white p-3 shadow-lg shadow-teal-200/40 transform transition-all duration-150 ease-out origin-top-left ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
-          style={{ position: 'fixed', top: portalStyle.top, left: portalStyle.left, minWidth: Math.max(320, portalStyle.width) }}
+          className={`z-[9999] rounded-lg border border-teal-100 bg-white p-3 shadow-lg shadow-teal-200/40 transform transition-all duration-150 ease-out ${portalStyle.dropUp ? 'origin-bottom-left' : 'origin-top-left'} ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}`}
+          style={{ position: 'fixed', top: portalStyle.top, left: portalStyle.left, minWidth: Math.max(320, portalStyle.width), maxWidth: 'calc(100vw - 16px)' }}
         >
           <div className="mb-2 grid grid-cols-2 gap-4 text-xs font-medium text-slate-600">
             <div className="text-left">Start</div>

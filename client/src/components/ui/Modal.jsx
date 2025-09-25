@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function Modal({ isOpen, onClose, title, children, size = "md" }) {
+export default function Modal({ isOpen, onClose, title, children, size = "md", height = 'auto' }) {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === "Escape") onClose();
@@ -18,11 +18,18 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" })
     };
   }, [isOpen, onClose]);
 
+  // Adjusted 'sm' width to comfortably contain calendar (was max-w-md ~ 28rem)
   const sizeClasses = {
-    sm: "max-w-md",
-    md: "max-w-lg", 
+    sm: "max-w-lg",      // ~32rem
+    md: "max-w-xl",      // ~36rem
     lg: "max-w-2xl",
     xl: "max-w-4xl"
+  };
+
+  const heightClasses = {
+    auto: '',
+    tall: 'min-h-[620px]',
+    taller: 'min-h-[720px]',
   };
 
   return (
@@ -39,7 +46,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" })
           <div className="fixed inset-0 z-50 overflow-y-auto">
             <div className="flex min-h-full items-center justify-center p-4">
               <motion.div
-                className={`relative w-full ${sizeClasses[size]} bg-white rounded-lg shadow-xl`}
+                className={`relative w-full ${sizeClasses[size]} ${heightClasses[height]||''} bg-white rounded-lg shadow-xl flex flex-col`}
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -60,7 +67,7 @@ export default function Modal({ isOpen, onClose, title, children, size = "md" })
                 </div>
                 
                 {/* Content */}
-                <div className="p-6">
+                <div className="p-6 flex-1 overflow-y-auto">
                   {children}
                 </div>
               </motion.div>

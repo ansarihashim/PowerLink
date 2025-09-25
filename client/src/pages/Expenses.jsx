@@ -7,6 +7,7 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { downloadCSV } from "../utils/export.js";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Modal from "../components/ui/Modal.jsx";
@@ -200,7 +201,7 @@ export default function Expenses() {
           </Card>
         </aside>
       </div>
-      <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Expense' : 'Edit Expense'} size="sm">
+  <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Expense' : 'Edit Expense'} size="sm" height="tall">
         {editing && (
           <form onSubmit={save} className="space-y-4 text-sm">
             <div>
@@ -217,7 +218,12 @@ export default function Expenses() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Date</label>
-              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              {/* Replaced native date input with themed calendar */}
+              <ThemedCalendarInput
+                value={form.date}
+                onChange={(e)=> setForm(f=>({...f, date:e.target.value}))}
+                className="w-full"
+              />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={()=> !saving && setEditing(null)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-600 hover:bg-slate-50">Cancel</button>

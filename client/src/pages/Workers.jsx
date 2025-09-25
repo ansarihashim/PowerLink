@@ -5,6 +5,7 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 // Seed import removed; now data comes from API
 import { api } from "../api/http.js";
 import { formatDMY } from "../utils/date.js";
@@ -247,7 +248,11 @@ export default function Workers() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Joining Date</label>
-              <input type="date" value={editForm.joiningDate} onChange={e=>setEditForm(f=>({...f,joiningDate:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <ThemedCalendarInput
+                value={editForm.joiningDate}
+                onChange={(e)=> setEditForm(f=>({...f, joiningDate:e.target.value}))}
+                className="w-full"
+              />
             </div>
           </div>
           <div>

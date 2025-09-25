@@ -11,6 +11,7 @@ import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
 import DateRangePicker from "../components/ui/DateRangePicker.jsx";
+import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { downloadCSV } from "../utils/export.js";
 import Select from "../components/ui/Select.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
@@ -163,7 +164,7 @@ export default function Installments() {
           <Button disabled={page===totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-1 disabled:opacity-50">Next</Button>
         </div>
       </div>
-      <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Installment' : 'Edit Installment'} size="sm">
+  <Modal isOpen={!!editing} onClose={()=> !saving && setEditing(null)} title={editing==='new' ? 'Add Installment' : 'Edit Installment'} size="sm" height="tall">
         {editing && (
           <form onSubmit={save} className="space-y-4 text-sm">
             <div>
@@ -181,7 +182,11 @@ export default function Installments() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Date Paid</label>
-              <input type="date" value={form.date} onChange={e=>setForm(f=>({...f,date:e.target.value}))} className="w-full rounded-md border border-slate-300 px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-transparent" />
+              <ThemedCalendarInput
+                value={form.date}
+                onChange={(e)=> setForm(f=>({...f, date:e.target.value}))}
+                className="w-full"
+              />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <button type="button" onClick={()=> !saving && setEditing(null)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-slate-600 hover:bg-slate-50">Cancel</button>
