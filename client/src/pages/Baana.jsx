@@ -73,7 +73,7 @@ export default function Baana() {
       </div>
       <Card className="p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-2">
-          <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); }} className="sm:col-span-2" />
+          <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); setPage(1); }} className="sm:col-span-2" />
         </div>
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
           <span>Sort by:</span>

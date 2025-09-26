@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
@@ -194,7 +194,7 @@ export default function Loans() {
           <DateRangePicker
             start={from}
             end={to}
-            onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); }}
+            onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); setPage(1); }}
             className="sm:col-span-2 md:col-span-2"
           />
         </div>
@@ -385,14 +385,42 @@ export default function Loans() {
 
 function GroupedLoanRow({ group, idx, onEdit, onDelete }) {
   const [expanded, setExpanded] = useState(false);
+  const [loans, setLoans] = useState(group.loans || []);
+  const [loadingAll, setLoadingAll] = useState(false);
+  const [errorAll, setErrorAll] = useState("");
+  const loadedAllRef = useRef(false);
+
+  // If parent refetches page and regrouping changes (e.g., pagination/filter) reset local subset (we'll refetch full count again)
+  useEffect(()=> { if(!expanded){ setLoans(group.loans || []); /* keep loadedAllRef so we don't refetch if already had full */ } }, [group.loans, expanded]);
+
+  const fetchAll = () => {
+    if(!group.workerId || loadedAllRef.current) return;
+    setLoadingAll(true); setErrorAll("");
+    api.loans.listByWorker(group.workerId)
+      .then(r => {
+        const full = (r.data||[]).map(l => ({ ...l, id: l._id }));
+        setLoans(full);
+        loadedAllRef.current = true;
+      })
+      .catch(e => setErrorAll(e.message || 'Failed to load all loans'))
+      .finally(()=> setLoadingAll(false));
+  };
+
+  // Prefetch full list immediately (for accurate count in collapsed state)
+  useEffect(()=> { fetchAll(); }, [group.workerId]);
+
+  const toggle = () => { setExpanded(e=> !e); };
+
   return (
     <tr className={`transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
       <td className="px-4 py-3 align-top">
         <div className="flex items-start gap-2">
-          <button onClick={()=> setExpanded(e=>!e)} className="mt-0.5 rounded border border-teal-300 px-2 py-0.5 text-xs text-teal-700 hover:bg-teal-50">{expanded ? '-' : '+'}</button>
+          <button onClick={toggle} className="mt-0.5 rounded border border-teal-300 px-2 py-0.5 text-xs text-teal-700 hover:bg-teal-50">{expanded ? '-' : '+'}</button>
           <div>
             <div className="font-medium">{group.workerName || group.workerId}</div>
-            <div className="text-[11px] text-slate-500">{group.loans.length} loan{group.loans.length!==1 && 's'}</div>
+            <div className="text-[11px] text-slate-500">
+              {loadingAll && !loadedAllRef.current ? 'Loading loans…' : `${loans.length} loan${loans.length!==1 ? 's' : ''}`}
+            </div>
           </div>
         </div>
       </td>
@@ -402,7 +430,14 @@ function GroupedLoanRow({ group, idx, onEdit, onDelete }) {
         )}
         {expanded && (
           <div className="space-y-2">
-            {group.loans.map(l => (
+            {loadingAll && !errorAll && <div className="text-[11px] text-teal-700">Loading all loans...</div>}
+            {errorAll && (
+              <div className="text-[11px] text-rose-600 flex items-center gap-2">
+                {errorAll}
+                <button type="button" onClick={fetchAll} className="underline">Retry</button>
+              </div>
+            )}
+            {loans.map(l => (
               <div key={l.id} className="rounded border border-teal-100 bg-teal-50 px-3 py-2">
                 <div className="flex flex-wrap gap-4 text-[11px] text-teal-800">
                   <span><strong>Amount:</strong> {Number(l.amount||0).toLocaleString()}</span>
@@ -417,13 +452,16 @@ function GroupedLoanRow({ group, idx, onEdit, onDelete }) {
                 </div>
               </div>
             ))}
+            {!loadingAll && loans.length === 0 && !errorAll && (
+              <div className="text-[11px] text-slate-500">No loans found for this worker.</div>
+            )}
           </div>
         )}
       </td>
       <td className="px-4 py-3 text-xs align-top">
         <div className="flex gap-2">
-          <button className="rounded border px-2 py-1 hover:bg-teal-50 border-teal-200 text-teal-700" onClick={()=> setExpanded(e=>!e)}>{expanded ? 'Collapse' : 'Expand'}</button>
-          <button className="rounded border px-2 py-1 hover:bg-rose-50 border-rose-200 text-rose-600" onClick={()=> { if(expanded && group.loans.length===1) onDelete(group.loans[0].id); else setExpanded(true); }}>Delete</button>
+          <button className="rounded border px-2 py-1 hover:bg-teal-50 border-teal-200 text-teal-700" onClick={toggle}>{expanded ? 'Collapse' : 'Expand'}</button>
+          <button className="rounded border px-2 py-1 hover:bg-rose-50 border-rose-200 text-rose-600" onClick={()=> { if(expanded && loans.length===1) onDelete(loans[0].id); else setExpanded(true); }}>Delete</button>
         </div>
       </td>
     </tr>

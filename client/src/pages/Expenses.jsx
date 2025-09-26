@@ -122,7 +122,7 @@ export default function Expenses() {
           {/* Filters */}
           <Card className="p-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-              <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); }} className="md:col-span-2" />
+              <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); setPage(1); }} className="md:col-span-2" />
               <SortSelect
                 value={category}
                 onChange={(e)=>setCategory(e.target.value)}

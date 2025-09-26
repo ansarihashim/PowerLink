@@ -3,7 +3,10 @@ import { api } from '../api/http.js';
 import DatePicker from "../components/ui/DatePicker.jsx";
 
 export default function AddWorker() {
-  const [form, setForm] = useState({ name: "", phone: "", address: "", joiningDate: "", aadhaarNumber: "", photo: "" });
+  // Use today's date as default to avoid backend "Missing fields" when user forgets to pick
+  const today = new Date().toISOString().slice(0,10);
+  const emptyForm = { name: "", phone: "", address: "", joiningDate: today, aadhaarNumber: "", photo: "" };
+  const [form, setForm] = useState(emptyForm);
   const [errors, setErrors] = useState({});
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
@@ -11,7 +14,13 @@ export default function AddWorker() {
 
   const onChange = (e) => {
     const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
+    if(name === 'aadhaarNumber'){
+      // Restrict to digits only silently
+      const digits = value.replace(/[^0-9]/g,'').slice(0,12);
+      setForm(f => ({ ...f, aadhaarNumber: digits }));
+      return;
+    }
+    setForm(f => ({ ...f, [name]: value }));
   };
 
   const validate = () => {
@@ -21,7 +30,8 @@ export default function AddWorker() {
     if (!cleanPhone) e.phone = "Required"; else if (cleanPhone.length !== 10) e.phone = "10 digits";
     if (!form.address.trim()) e.address = "Required";
     if (!form.joiningDate) e.joiningDate = "Required";
-	if (!form.aadhaarNumber || form.aadhaarNumber.length !== 12) e.aadhaarNumber = "12 digits";
+    const aadhaarDigits = form.aadhaarNumber.replace(/[^0-9]/g,'');
+    if (!aadhaarDigits) e.aadhaarNumber = "Required"; else if (aadhaarDigits.length !== 12) e.aadhaarNumber = "12 digits";
     return e;
   };
 
@@ -33,21 +43,33 @@ export default function AddWorker() {
     if (Object.keys(eMap).length) return;
     setSubmitting(true);
     try {
-      const payload = { ...form, phone: form.phone.replace(/[^0-9]/g,'') };
+      const payload = {
+        ...form,
+        phone: form.phone.replace(/[^0-9]/g,''),
+        aadhaarNumber: form.aadhaarNumber.replace(/[^0-9]/g,''),
+        joiningDate: form.joiningDate // already yyyy-mm-dd
+      };
       await api.workers.create(payload);
       setSuccess("Worker saved");
-  setForm({ name: "", phone: "", address: "", joiningDate: "", aadhaarNumber:"", photo:"" });
+      setForm(emptyForm);
     } catch (err) {
-      setError(err.message);
+      // Normalize some common backend messages for clarity
+      const msg = err?.message || 'Failed to add worker';
+      let friendly = msg;
+      if(/phone already exists/i.test(msg)) friendly = 'Phone already exists';
+      else if(/aadhaar already exists/i.test(msg)) friendly = 'Aadhaar already exists';
+      else if(/phone must be exactly 10 digits/i.test(msg)) friendly = 'Phone must be exactly 10 digits';
+      else if(/missing fields/i.test(msg)) friendly = 'All required fields must be filled';
+      setError(friendly);
     } finally {
       setSubmitting(false);
     }
   };
 
   const onCancel = () => {
-  setForm({ name: "", phone: "", address: "", joiningDate: "", aadhaarNumber:"", photo:"" });
+    setForm(emptyForm);
     setErrors({});
-  setSuccess(""); setError("");
+    setSuccess(""); setError("");
   };
 
   const field = (name, placeholder, props = {}) => (
@@ -75,7 +97,16 @@ export default function AddWorker() {
           {field('name', 'Name')}
           {field('phone', 'Phone')}
           <div>
-            <input name="aadhaarNumber" value={form.aadhaarNumber} onChange={onChange} placeholder="Aadhaar Number (12 digits)" className={`w-full rounded-md border px-3 py-2 text-sm font-mono tracking-wider hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.aadhaarNumber ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`} maxLength={12} />
+            <input
+              name="aadhaarNumber"
+              value={form.aadhaarNumber}
+              onChange={onChange}
+              placeholder="Aadhaar Number (12 digits)"
+              className={`w-full rounded-md border px-3 py-2 text-sm font-mono tracking-wider hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200 ${errors.aadhaarNumber ? 'border-rose-300 bg-rose-50' : 'border-gray-200'}`}
+              maxLength={12}
+              inputMode="numeric"
+              pattern="[0-9]*"
+            />
             {errors.aadhaarNumber && <div className="mt-1 text-xs text-rose-600">{errors.aadhaarNumber}</div>}
           </div>
           <div className="sm:col-span-2">{field('address', 'Address')}</div>

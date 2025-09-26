@@ -60,6 +60,9 @@ export default function DateRangePicker({ start, end, onChange, className = "" }
 
   const apply = () => {
     let s = tmpStart || ""; let e = tmpEnd || "";
+    // If only one side selected treat as single-day range for consistent filtering
+    if (s && !e) e = s; else if (!s && e) s = e;
+    // Normalize ordering
     if (s && e && s > e) { const t = s; s = e; e = t; }
     onChange?.({ start: s, end: e });
     setShow(false); setTimeout(()=> setOpen(false), 160);
