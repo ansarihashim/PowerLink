@@ -1,0 +1,102 @@
+# Dependencies
+node_modules/
+*/node_modules/
+**/node_modules/
+package-lock.json.bak
+yarn.lock.bak
+
+# Environment files
+.env
+.env.*
+!.env.example
+.env.local
+.env.development
+.env.production
+.env.test
+server/.env
+server/.env.*
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
+
+# Build outputs
+dist/
+*/dist/
+build/
+*/build/
+.vercel
+.vercel/
+out/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+.Spotlight-V100
+.Trashes
+
+# Testing
+coverage/
+.nyc_output
+*.lcov
+.jest/
+
+# Temporary files
+*.tmp
+*.temp
+.cache
+.parcel-cache
+.eslintcache
+.stylelintcache
+
+# Database files (if using local)
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+
+# Miscellaneous
+.npmrc
+.yarnrc
+.yarn/
+.pnp.*
+
+# Debug
+debug.log
+.vscode-test/
+
+# Generated files
+*.generated.*
+.next/
+.nuxt/
+
+# Lock files (uncomment if you want to ignore them)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
