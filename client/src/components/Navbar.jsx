@@ -5,6 +5,7 @@ import api from "../api/http.js";
 import { useToast } from "./ui/ToastProvider.jsx";
 import ConfirmDialog from "./ui/ConfirmDialog.jsx";
 
+
 export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" }) {
   // Control for the profile dropdown (click-only)
   const [menuOpen, setMenuOpen] = useState(false);
@@ -166,7 +167,7 @@ export default function Navbar({ onMenuClick, offsetClass = "lg:left-[17rem]" })
             )}
           </div>
         </div>
-        </div>
+      </div>
         <ConfirmDialog
           open={showRemove}
           title="Remove profile picture?"

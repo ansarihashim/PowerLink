@@ -16,13 +16,6 @@ export function makeCrudController(Model, { searchable = [], dateField } = {}) {
       if (q && searchable.length) {
         filter.$or = searchable.map(f => ({ [f]: { $regex: q, $options: 'i' } }));
       }
-      if (dateField) {
-        const from = req.query.from ? new Date(req.query.from) : null;
-        const to = req.query.to ? new Date(req.query.to) : null;
-        if (from || to) filter[dateField] = {};
-        if (from) filter[dateField].$gte = from;
-        if (to) filter[dateField].$lte = to;
-      }
       const sortBy = req.query.sortBy || dateField || 'createdAt';
       const sortDir = (req.query.sortDir === 'asc') ? 1 : -1;
       const total = await Model.countDocuments(filter);

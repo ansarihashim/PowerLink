@@ -1,10 +1,9 @@
 import { useEffect, useState, useRef } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
-import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 // Seed import removed; now data comes from API
 import { api } from "../api/http.js";
@@ -18,16 +17,11 @@ import Spinner from "../components/ui/Spinner.jsx";
 
 export default function Workers() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const initialFrom = searchParams.get('from') || "";
-  const initialTo = searchParams.get('to') || "";
   const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const [q, setQ] = useState("");
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(initialTo);
   const [rows, setRows] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -45,7 +39,7 @@ export default function Workers() {
   useEffect(() => {
     let alive = true;
     setLoading(true); setError("");
-    const params = { page, pageSize, q, from, to, sortBy: sortKey, sortDir };
+    const params = { page, pageSize, q, sortBy: sortKey, sortDir };
     api.workers.list(params)
       .then(r => {
         if (!alive) return;
@@ -64,7 +58,7 @@ export default function Workers() {
       .catch(e => { if (alive) setError(e.message); })
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [page, q, from, to, sortKey, sortDir, refreshTick]);
+  }, [page, q, sortKey, sortDir, refreshTick]);
 
   function openEdit(w){
     setEditing(w);
@@ -156,9 +150,8 @@ export default function Workers() {
       </div>
       {/* Filters */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input value={q} onChange={(e)=>setQ(e.target.value)} className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" placeholder="Search by name" />
-          <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); setPage(1); }} className="md:col-span-2" />
         </div>
         <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
           <span>Sort by:</span>

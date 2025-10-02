@@ -8,20 +8,11 @@ const c = makeCrudController(Expense, { searchable: ['category'], dateField: 'da
 const router = Router();
 router.get('/', c.list);
 router.post('/', c.create);
-// Expense comparison aggregation: /api/expenses/aggregate?from=YYYY-MM-DD&to=YYYY-MM-DD&group=month|day
+// Expense comparison aggregation: /api/expenses/aggregate?group=month|day
 router.get('/aggregate', requireAuth, async (req,res)=> {
 	try {
-		const from = req.query.from ? new Date(req.query.from) : null;
-		const to = req.query.to ? new Date(req.query.to) : null;
 		const group = req.query.group === 'day' ? 'day' : 'month';
-		const match = {};
-		if (from || to) {
-			match.date = {};
-			if (from) match.date.$gte = from;
-			if (to) match.date.$lte = to;
-		}
 		const pipeline = [];
-		if (Object.keys(match).length) pipeline.push({ $match: match });
 		pipeline.push({
 			$group: {
 				_id: group === 'day' ? {

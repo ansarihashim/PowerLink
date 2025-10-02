@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { api } from "../api/http.js";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Modal from "../components/ui/Modal.jsx";
@@ -10,7 +9,6 @@ import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
-import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { downloadCSV } from "../utils/export.js";
 import Select from "../components/ui/Select.jsx";
@@ -18,21 +16,16 @@ import Spinner from "../components/ui/Spinner.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
 
 export default function Installments() {
-  const [searchParams] = useSearchParams();
-  const initialFrom = searchParams.get('from') || "";
-  const initialTo = searchParams.get('to') || "";
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(1);
   const pageSize = 5;
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(initialTo);
   const queryClient = useQueryClient();
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['installments', { page, pageSize, from, to, sortKey, sortDir }],
+    queryKey: ['installments', { page, pageSize, sortKey, sortDir }],
     keepPreviousData: true,
     refetchOnWindowFocus: false,
-    queryFn: () => api.installments.list({ page, pageSize, from, to, sortBy: sortKey, sortDir })
+    queryFn: () => api.installments.list({ page, pageSize, sortBy: sortKey, sortDir })
   });
   const rows = (data?.data || []).map(i => ({ ...i, id: i._id }));
   const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));
@@ -59,7 +52,7 @@ export default function Installments() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['installments'] });
       const prev = queryClient.getQueriesData({ queryKey: ['installments'] });
-      queryClient.setQueryData(['installments', { page, pageSize, from, to, sortKey, sortDir }], (old) => {
+      queryClient.setQueryData(['installments', { page, pageSize, sortKey, sortDir }], (old) => {
         if (!old) return old;
         return { ...old, data: (old.data||[]).filter(i => i._id !== id) };
       });
@@ -108,10 +101,7 @@ export default function Installments() {
         <h2 className="text-xl font-semibold text-slate-900">Installments</h2>
       </div>
       <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-2">
-          <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); setPage(1); }} className="sm:col-span-2" />
-        </div>
-        <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+        <div className="flex items-center gap-2 text-sm text-slate-600">
           <span>Sort by:</span>
           <SortSelect
             value={sortKey}

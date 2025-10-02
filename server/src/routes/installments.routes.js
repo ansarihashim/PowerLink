@@ -12,12 +12,7 @@ function parsePagination(req) {
 
 async function listInstallments(req, res) {
 	const { page, pageSize } = parsePagination(req);
-	const from = req.query.from ? new Date(req.query.from) : null;
-	const to = req.query.to ? new Date(req.query.to) : null;
 	const filter = {};
-	if (from || to) filter.date = {};
-	if (from) filter.date.$gte = from;
-	if (to) filter.date.$lte = to;
 	const sortBy = req.query.sortBy || 'date';
 	const sortDir = req.query.sortDir === 'asc' ? 1 : -1;
 	const total = await Installment.countDocuments(filter);

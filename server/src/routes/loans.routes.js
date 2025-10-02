@@ -12,13 +12,8 @@ function parsePagination(req) {
 
 async function listLoans(req, res) {
 	const { page, pageSize } = parsePagination(req);
-	const from = req.query.from ? new Date(req.query.from) : null;
-	const to = req.query.to ? new Date(req.query.to) : null;
 	const filter = {};
 	if (req.query.workerId) filter.workerId = req.query.workerId;
-	if (from || to) filter.loanDate = {};
-	if (from) filter.loanDate.$gte = from;
-	if (to) filter.loanDate.$lte = to;
 	const sortBy = req.query.sortBy || 'loanDate';
 	const sortDir = req.query.sortDir === 'asc' ? 1 : -1;
 

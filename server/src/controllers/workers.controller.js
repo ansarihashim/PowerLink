@@ -19,11 +19,6 @@ export async function listWorkers(req, res) {
     { phone: { $regex: q, $options: 'i' } },
     { address: { $regex: q, $options: 'i' } }
   ];
-  const from = req.query.from ? new Date(req.query.from) : null;
-  const to = req.query.to ? new Date(req.query.to) : null;
-  if (from || to) filter.joiningDate = {};
-  if (from) filter.joiningDate.$gte = from;
-  if (to) filter.joiningDate.$lte = to;
   const sortBy = req.query.sortBy || 'joiningDate';
   const sortDir = (req.query.sortDir === 'asc') ? 1 : -1;
   const total = await Worker.countDocuments(filter);

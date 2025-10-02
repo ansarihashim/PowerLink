@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { api } from "../api/http.js";
 import { formatDMY } from "../utils/date.js";
 import Card from "../components/ui/Card.jsx";
 import Button from "../components/ui/Button.jsx";
 import SortSelect from "../components/ui/SortSelect.jsx";
 import DatePicker from "../components/ui/DatePicker.jsx";
-import DateRangePicker from "../components/ui/DateRangePicker.jsx";
 import ThemedCalendarInput from "../components/ui/ThemedCalendarInput.jsx";
 import { downloadCSV } from "../utils/export.js";
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,23 +16,18 @@ import Spinner from "../components/ui/Spinner.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
 
 export default function Expenses() {
-  const [searchParams] = useSearchParams();
-  const initialFrom = searchParams.get('from') || "";
-  const initialTo = searchParams.get('to') || "";
   const [sortKey, setSortKey] = useState("date");
   const [sortDir, setSortDir] = useState("desc");
   const [page, setPage] = useState(1);
   const pageSize = 5;
   const [category, setCategory] = useState("all");
-  const [from, setFrom] = useState(initialFrom);
-  const [to, setTo] = useState(initialTo);
   const queryClient = useQueryClient();
   const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ['expenses', { page, pageSize, from, to, sortKey, sortDir, category }],
+    queryKey: ['expenses', { page, pageSize, sortKey, sortDir, category }],
     keepPreviousData: true,
     refetchOnWindowFocus: false,
     queryFn: () => {
-      const params = { page, pageSize, from, to, sortBy: sortKey, sortDir };
+      const params = { page, pageSize, sortBy: sortKey, sortDir };
       if (category !== 'all') params.category = category;
       return api.expenses.list(params);
     }
@@ -55,7 +48,7 @@ export default function Expenses() {
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['expenses'] });
       const prev = queryClient.getQueriesData({ queryKey: ['expenses'] });
-      queryClient.setQueryData(['expenses', { page, pageSize, from, to, sortKey, sortDir, category }], (old) => {
+      queryClient.setQueryData(['expenses', { page, pageSize, sortKey, sortDir, category }], (old) => {
         if (!old) return old;
         return { ...old, data: (old.data||[]).filter(e => e._id !== id) };
       });
@@ -121,8 +114,7 @@ export default function Expenses() {
         <div className="lg:col-span-2 space-y-4">
           {/* Filters */}
           <Card className="p-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-              <DateRangePicker start={from} end={to} onChange={({ start, end }) => { setFrom(start || ""); setTo(end || ""); setPage(1); }} className="md:col-span-2" />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <SortSelect
                 value={category}
                 onChange={(e)=>setCategory(e.target.value)}

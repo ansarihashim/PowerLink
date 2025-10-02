@@ -9,34 +9,18 @@ import { Beam } from '../models/Beam.js';
 
 const r = Router();
 
-// GET /api/stats/summary?from=yyyy-mm-dd&to=yyyy-mm-dd
+// GET /api/stats/summary
 r.get('/summary', requireAuth, async (req,res,next) => {
   try {
-    const { from, to } = req.query;
-    const dateFilter = (field) => {
-      if (!from && !to) return {};
-      const range = {};
-      if (from) range.$gte = new Date(from);
-      if (to) {
-        const dt = new Date(to);
-        dt.setHours(23,59,59,999);
-        range.$lte = dt;
-      }
-      return { [field]: range };
-    };
-
     const [workerCount, loanAgg, instAgg, expAgg] = await Promise.all([
-      Worker.countDocuments(from || to ? { ...dateFilter('joiningDate') } : {}),
+      Worker.countDocuments({}),
       Loan.aggregate([
-        { $match: { ...(from||to? dateFilter('loanDate'): {}) } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       Installment.aggregate([
-        { $match: { ...(from||to? dateFilter('date'): {}) } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ]),
       Expense.aggregate([
-        { $match: { ...(from||to? dateFilter('date'): {}) } },
         { $group: { _id: null, total: { $sum: '$amount' } } }
       ])
     ]);
