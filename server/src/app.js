@@ -24,6 +24,8 @@ app.use(morgan('dev'));
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
 app.use('/api/auth', authLimiter);
 
+app.get('/', (req, res) => res.json({ message: 'PowerLink API', status: 'running', version: '1.0.0' }));
+app.get('/api', (req, res) => res.json({ message: 'PowerLink API', status: 'running', endpoints: ['/api/health', '/api/auth', '/api/workers', '/api/loans', '/api/expenses', '/api/baana', '/api/beam'] }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 app.use('/api', apiRoutes);
