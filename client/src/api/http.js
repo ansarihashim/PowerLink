@@ -31,7 +31,10 @@ async function request(path, { method = 'GET', body, headers = {}, retry } = {})
       if (rt) return request(path, { method, body, headers, retry: true });
     }
     const message = isJson && payload && payload.message ? payload.message : `Request failed (${res.status})`;
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = res.status;
+    err.code = payload?.code;
+    throw err;
   }
   return payload;
 }
@@ -125,6 +128,16 @@ export const api = {
   updateAvatar: (avatarDataUrl) => request('/auth/profile', { method: 'PUT', body: { avatar: avatarDataUrl } }),
   changePassword: (data) => request('/auth/change-password', { method: 'POST', body: data }),
   // 2FA endpoints removed per requirement
+  
+  // Admin user management endpoints
+  admin: {
+    getPendingUsers: () => request('/admin/users/pending'),
+    getAllUsers: (status = 'all') => request(`/admin/users?status=${status}`),
+    approveUser: (userId, permissions, role) => request(`/admin/users/${userId}/approve`, { method: 'POST', body: { permissions, role } }),
+    rejectUser: (userId, reason) => request(`/admin/users/${userId}/reject`, { method: 'POST', body: { reason } }),
+    updatePermissions: (userId, permissions, role) => request(`/admin/users/${userId}/permissions`, { method: 'PUT', body: { permissions, role } }),
+    deleteUser: (userId) => request(`/admin/users/${userId}`, { method: 'DELETE' })
+  }
 };
 
 export default api;

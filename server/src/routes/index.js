@@ -7,11 +7,13 @@ import expensesRoutes from './expenses.routes.js';
 import baanaRoutes from './baana.routes.js';
 import beamRoutes from './beam.routes.js';
 import statsRoutes from './stats.routes.js';
+import adminRoutes from './admin.routes.js';
 import { requireAuth } from '../middlewares/auth.js';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/admin', adminRoutes);
 router.use('/workers', requireAuth, workersRoutes);
 router.use('/loans', requireAuth, loansRoutes);
 router.use('/installments', requireAuth, installmentsRoutes);

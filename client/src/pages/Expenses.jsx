@@ -14,6 +14,7 @@ import { useToast } from "../components/ui/ToastProvider.jsx";
 import Select from "../components/ui/Select.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
+import { handleApiError } from "../utils/errorHandler.js";
 
 export default function Expenses() {
   const [sortKey, setSortKey] = useState("date");
@@ -81,12 +82,31 @@ export default function Expenses() {
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
       window.dispatchEvent(new Event('expenses:changed'));
     } catch(err){
-      push({ type:'error', title:'Save Failed', message: err.message });
       setSaving(false);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Save Failed', message: err.message });
+      }
     }
   }
   function startDelete(id){ setDeleteId(id); }
-  function confirmDelete(){ if(!deleteId) return; deleteMutation.mutate(deleteId, { onSuccess:()=> { push({ type:'success', title:'Expense Deleted', message:'Expense removed.' }); setDeleteId(null); window.dispatchEvent(new Event('expenses:changed')); }, onError:(e)=> { push({ type:'error', title:'Delete Failed', message:e.message }); setDeleteId(null); } }); }
+  function confirmDelete(){ 
+    if(!deleteId) return; 
+    deleteMutation.mutate(deleteId, { 
+      onSuccess:()=> { 
+        push({ type:'success', title:'Expense Deleted', message:'Expense removed.' }); 
+        setDeleteId(null); 
+        window.dispatchEvent(new Event('expenses:changed')); 
+      }, 
+      onError:(e)=> { 
+        setDeleteId(null);
+        // Use global error handler for permission errors
+        if (!handleApiError(e, { push })) {
+          push({ type:'error', title:'Delete Failed', message:e.message }); 
+        }
+      } 
+    }); 
+  }
   function cancelDelete(){ setDeleteId(null); }
 
   const total = rows.reduce((s, e) => s + (e.amount||0), 0);

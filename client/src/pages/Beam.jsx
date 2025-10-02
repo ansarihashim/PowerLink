@@ -12,6 +12,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import { handleApiError } from "../utils/errorHandler.js";
 
 export default function Beam() {
   const [sortKey, setSortKey] = useState("date");
@@ -53,9 +54,46 @@ export default function Beam() {
 
   function openAdd(){ setEditing('new'); setForm({ date: new Date().toISOString().slice(0,10), bunches: '' }); }
   function openEdit(rec){ setEditing(rec); setForm({ date: rec.date?.slice(0,10) || '', bunches: rec.bunches }); }
-  async function save(e){ e.preventDefault(); if(!editing) return; setSaving(true); try { const payload = { date: form.date, bunches: Number(form.bunches) }; if(editing==='new'){ await api.beam.create(payload); push({ type:'success', title:'Record Added', message:'Beam record created.' }); } else { await api.beam.update(editing.id || editing._id, payload); push({ type:'success', title:'Record Updated', message:'Changes saved.' }); } setEditing(null); setSaving(false); setPage(1); } catch(err){ push({ type:'error', title:'Save Failed', message: err.message }); setSaving(false); } }
+  async function save(e){ 
+    e.preventDefault(); 
+    if(!editing) return; 
+    setSaving(true); 
+    try { 
+      const payload = { date: form.date, bunches: Number(form.bunches) }; 
+      if(editing==='new'){ 
+        await api.beam.create(payload); 
+        push({ type:'success', title:'Record Added', message:'Beam record created.' }); 
+      } else { 
+        await api.beam.update(editing.id || editing._id, payload); 
+        push({ type:'success', title:'Record Updated', message:'Changes saved.' }); 
+      } 
+      setEditing(null); 
+      setSaving(false); 
+      setPage(1); 
+    } catch(err){ 
+      setSaving(false);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Save Failed', message: err.message }); 
+      }
+    } 
+  }
   function startDelete(id){ setDeleteId(id); }
-  async function confirmDelete(){ if(!deleteId) return; try { await api.beam.remove(deleteId); push({ type:'success', title:'Record Deleted', message:'Beam record removed.' }); setDeleteId(null); setRows(r=> r.filter(x => x.id !== deleteId)); } catch(err){ push({ type:'error', title:'Delete Failed', message: err.message }); setDeleteId(null); } }
+  async function confirmDelete(){ 
+    if(!deleteId) return; 
+    try { 
+      await api.beam.remove(deleteId); 
+      push({ type:'success', title:'Record Deleted', message:'Beam record removed.' }); 
+      setDeleteId(null); 
+      setRows(r=> r.filter(x => x.id !== deleteId)); 
+    } catch(err){ 
+      setDeleteId(null);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Delete Failed', message: err.message }); 
+      }
+    } 
+  }
   function cancelDelete(){ setDeleteId(null); }
 
   return (

@@ -14,6 +14,7 @@ import { useToast } from "../components/ui/ToastProvider.jsx";
 import { downloadCSV } from "../utils/export.js";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import { handleApiError } from "../utils/errorHandler.js";
 
 export default function Workers() {
   const navigate = useNavigate();
@@ -101,9 +102,12 @@ export default function Workers() {
       setEditing(null); setSaving(false);
       setRefreshTick(t=>t+1);
     } catch(err){
-      const msg = err?.message || 'Operation failed.';
-      push({ type: 'error', title: 'Save Failed', message: msg });
       setSaving(false);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        const msg = err?.message || 'Operation failed.';
+        push({ type: 'error', title: 'Save Failed', message: msg });
+      }
     }
   }
 
@@ -115,8 +119,11 @@ export default function Workers() {
       setDeleteId(null);
       setRefreshTick(t=>t+1);
     } catch(err){
-      push({ type: 'error', title: 'Delete Failed', message: err.message });
       setDeleteId(null);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type: 'error', title: 'Delete Failed', message: err.message });
+      }
     }
   }
 

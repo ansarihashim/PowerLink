@@ -23,11 +23,31 @@ export async function register(req, res) {
   const count = await User.countDocuments();
   const passwordHash = await hashPassword(password);
   const role = count === 0 ? 'admin' : 'viewer';
-  const user = await User.create({ name, email, passwordHash, role });
-  const accessToken = signAccessToken({ sub: user._id.toString(), role: user.role, tv: user.tokenVersion });
-  const refreshToken = signRefreshToken({ sub: user._id.toString(), tv: user.tokenVersion });
-  setRefreshCookie(res, refreshToken);
-  return created(res, { user: sanitizeUser(user), accessToken });
+  
+  // First user is auto-approved as admin, others are pending
+  const accountStatus = count === 0 ? 'approved' : 'pending';
+  const permissions = count === 0 ? { canRead: true, canWrite: true, canDelete: true, canExport: true } : { canRead: false, canWrite: false, canDelete: false, canExport: false };
+  
+  const user = await User.create({ name, email, passwordHash, role, accountStatus, permissions });
+  
+  // Only auto-login if first user (admin), otherwise return pending status
+  if (count === 0) {
+    const accessToken = signAccessToken({ 
+      sub: user._id.toString(), 
+      role: user.role, 
+      tv: user.tokenVersion,
+      permissions: user.permissions
+    });
+    const refreshToken = signRefreshToken({ sub: user._id.toString(), tv: user.tokenVersion });
+    setRefreshCookie(res, refreshToken);
+    return created(res, { user: sanitizeUser(user), accessToken });
+  } else {
+    return created(res, { 
+      message: 'Registration successful. Your account is pending admin approval.',
+      accountStatus: 'pending',
+      user: { name: user.name, email: user.email }
+    });
+  }
 }
 
 export async function login(req, res) {
@@ -39,10 +59,24 @@ export async function login(req, res) {
   const okPw = await verifyPassword(password, user.passwordHash);
   if (!okPw) return error(res, 'Invalid credentials', 'INVALID_CREDENTIALS', 401);
   
+  // Check account approval status
+  if (user.accountStatus === 'pending') {
+    return error(res, 'Your account is pending admin approval. Please wait for approval.', 'ACCOUNT_PENDING', 403);
+  }
+  if (user.accountStatus === 'rejected') {
+    const reason = user.rejectedReason || 'Your account request was rejected.';
+    return error(res, reason, 'ACCOUNT_REJECTED', 403);
+  }
+  
   // Update last login timestamp
   await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
   
-  const accessToken = signAccessToken({ sub: user._id.toString(), role: user.role, tv: user.tokenVersion });
+  const accessToken = signAccessToken({ 
+    sub: user._id.toString(), 
+    role: user.role, 
+    tv: user.tokenVersion,
+    permissions: user.permissions
+  });
   const refreshToken = signRefreshToken({ sub: user._id.toString(), tv: user.tokenVersion });
   setRefreshCookie(res, refreshToken);
   return ok(res, { user: sanitizeUser(user), accessToken });
@@ -56,8 +90,13 @@ export async function refresh(req, res) {
     const user = await User.findById(payload.sub);
     if (!user) return error(res, 'User not found', 'UNAUTHORIZED', 401);
     if (payload.tv !== user.tokenVersion) return error(res, 'Token expired', 'UNAUTHORIZED', 401);
-    // issue new tokens
-    const accessToken = signAccessToken({ sub: user._id.toString(), role: user.role, tv: user.tokenVersion });
+    // issue new tokens with updated permissions
+    const accessToken = signAccessToken({ 
+      sub: user._id.toString(), 
+      role: user.role, 
+      tv: user.tokenVersion,
+      permissions: user.permissions
+    });
     const refreshToken = signRefreshToken({ sub: user._id.toString(), tv: user.tokenVersion });
     setRefreshCookie(res, refreshToken);
     return ok(res, { accessToken });
@@ -167,7 +206,9 @@ function sanitizeUser(user) {
     createdAt: user.createdAt,
     lastLogin: user.lastLogin,
     lastPasswordChange: user.lastPasswordChange,
-  avatar: user.avatar || null,
-  // 2FA removed
+    avatar: user.avatar || null,
+    accountStatus: user.accountStatus,
+    permissions: user.permissions || { canRead: false, canWrite: false, canDelete: false, canExport: false },
+    // 2FA removed
   };
 }

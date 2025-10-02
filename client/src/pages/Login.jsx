@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { motion } from 'framer-motion';
 import Button from '../components/ui/Button.jsx';
+import { useToast } from '../components/ui/ToastProvider.jsx';
 
 // Registration password rule: >=6 chars, at least one lowercase, one uppercase, one special/non-alphanumeric char
 const passwordRule = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{6,}$/;
@@ -11,6 +12,7 @@ export default function Login() {
   const [mode, setMode] = useState('login'); // 'login' | 'register'
   const { login, register } = useAuth();
   const navigate = useNavigate();
+  const { push } = useToast();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -30,14 +32,59 @@ export default function Login() {
     }
     try {
       setLoading(true);
+      setError('');
       if (mode === 'login') {
         await login({ email, password });
+        navigate('/');
       } else {
-        await register({ name, email, password });
+        const result = await register({ name, email, password });
+        // Check if registration requires approval
+        if (result.accountStatus === 'pending') {
+          setMode('login');
+          push({ 
+            type: 'success', 
+            title: 'Registration Received', 
+            message: 'Your account has been created and is awaiting admin approval. You\'ll be able to log in once approved.',
+            duration: 6000 
+          });
+          setEmail('');
+          setPassword('');
+          setName('');
+        } else {
+          navigate('/');
+        }
       }
-      navigate('/');
     } catch (err) {
-      setError(err.message || 'Something went wrong');
+      const errorMessage = err.message || 'Something went wrong';
+      
+      // Check if it's a pending account error
+      if (errorMessage.includes('pending admin approval') || errorMessage.includes('ACCOUNT_PENDING')) {
+        push({ 
+          type: 'warning', 
+          title: 'Account Pending Approval', 
+          message: 'Your registration request has been sent. Please wait for admin approval before logging in.',
+          duration: 5000 
+        });
+        setPassword(''); // Clear password for security
+      } 
+      // Check if it's a rejected account error
+      else if (errorMessage.includes('rejected') || errorMessage.includes('ACCOUNT_REJECTED')) {
+        setError(errorMessage);
+      } 
+      // Check if it's invalid credentials (user not found or wrong password)
+      else if (mode === 'login' && (errorMessage.includes('Invalid') || errorMessage.includes('credentials'))) {
+        push({ 
+          type: 'error', 
+          title: 'Record Not Found', 
+          message: 'No account found with these credentials. Please sign up to create an account.',
+          duration: 5000 
+        });
+        setPassword(''); // Clear password for security
+      }
+      // Other errors
+      else {
+        setError(errorMessage);
+      }
     } finally { setLoading(false); }
   };
 

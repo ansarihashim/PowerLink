@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { Loan } from '../models/Loan.js';
 import { Installment } from '../models/Installment.js';
 import { error, ok, created } from '../utils/response.js';
+import { requireWrite, requireDelete } from '../middlewares/auth.js';
 
 function parsePagination(req) {
 	const page = Math.max(1, parseInt(req.query.page)||1);
@@ -97,9 +98,9 @@ async function deleteLoan(req, res) {
 	} catch (e) { return error(res, e.message); }
 }
 const router = Router();
-router.get('/', listLoans);
-router.post('/', createLoan);
-router.get('/:id', getLoan);
-router.put('/:id', updateLoan);
-router.delete('/:id', deleteLoan);
+router.get('/', listLoans);                    // Read - no extra middleware needed
+router.post('/', requireWrite, createLoan);           // Write permission required
+router.get('/:id', getLoan);                   // Read - no extra middleware needed
+router.put('/:id', requireWrite, updateLoan);         // Write permission required
+router.delete('/:id', requireDelete, deleteLoan);     // Delete permission required
 export default router;

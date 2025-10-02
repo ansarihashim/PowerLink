@@ -52,6 +52,7 @@ export function AuthProvider({ children }) {
         const me = await api.auth.me().catch(()=>null);
         setUser(me?.user || me);
       }
+      return r; // Return the response so caller can check accountStatus
     } catch (err) {
       if (/Email already registered/i.test(err.message)) {
         throw new Error('Email already in use');

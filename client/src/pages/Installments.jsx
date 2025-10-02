@@ -14,6 +14,7 @@ import { downloadCSV } from "../utils/export.js";
 import Select from "../components/ui/Select.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
+import { handleApiError } from "../utils/errorHandler.js";
 
 export default function Installments() {
   const [sortKey, setSortKey] = useState("date");
@@ -72,10 +73,31 @@ export default function Installments() {
       else { await api.installments.update(editing.id || editing._id, payload); push({ type:'success', title:'Installment Updated', message:'Changes saved.' }); }
       setEditing(null); setSaving(false);
       queryClient.invalidateQueries({ queryKey: ['installments'] });
-    } catch(err){ push({ type:'error', title:'Save Failed', message: err.message }); setSaving(false); }
+    } catch(err){ 
+      setSaving(false);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Save Failed', message: err.message }); 
+      }
+    }
   }
   function startDelete(id){ setDeleteId(id); }
-  function confirmDelete(){ if(!deleteId) return; deleteMutation.mutate(deleteId, { onSuccess:()=> { push({ type:'success', title:'Installment Deleted', message:'Installment removed.' }); setDeleteId(null); }, onError:(e)=> { push({ type:'error', title:'Delete Failed', message:e.message }); setDeleteId(null); } }); }
+  function confirmDelete(){ 
+    if(!deleteId) return; 
+    deleteMutation.mutate(deleteId, { 
+      onSuccess:()=> { 
+        push({ type:'success', title:'Installment Deleted', message:'Installment removed.' }); 
+        setDeleteId(null); 
+      }, 
+      onError:(e)=> { 
+        setDeleteId(null);
+        // Use global error handler for permission errors
+        if (!handleApiError(e, { push })) {
+          push({ type:'error', title:'Delete Failed', message:e.message }); 
+        }
+      } 
+    }); 
+  }
   function cancelDelete(){ setDeleteId(null); }
 
   // API handles sorting/paging.

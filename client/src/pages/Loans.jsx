@@ -13,6 +13,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 import Select from "../components/ui/Select.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
+import { handleApiError } from "../utils/errorHandler.js";
 
 export default function Loans() {
   const [sortKey, setSortKey] = useState("loanDate");
@@ -113,8 +114,11 @@ export default function Loans() {
       setEditing(null); setSaving(false);
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'loans' });
     } catch(err){
-      push({ type:'error', title:'Update Failed', message: err.message });
       setSaving(false);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Update Failed', message: err.message });
+      }
     }
   }
 
@@ -125,8 +129,11 @@ export default function Loans() {
       setDeleteId(null);
       queryClient.invalidateQueries({ predicate: q => Array.isArray(q.queryKey) && q.queryKey[0] === 'loans' });
     } catch(err){
-      push({ type:'error', title:'Delete Failed', message: err.message });
       setDeleteId(null);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Delete Failed', message: err.message });
+      }
     }
   }
   const totalPages = Math.max(1, Math.ceil(((data?.meta?.total) || rows.length) / pageSize));

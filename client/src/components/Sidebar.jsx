@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "../context/AuthContext.jsx";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: (
@@ -26,12 +27,16 @@ const navItems = [
   { to: "/calendar", label: "Calendar", icon: (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" strokeWidth="1.5"/><path d="M16 2v4M8 2v4M3 10h18" strokeWidth="1.5"/></svg>
   ) },
+  { to: "/user-management", label: "User Management", icon: (
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" strokeWidth="1.5"/></svg>
+  ), adminOnly: true },
   { to: "/profile", label: "Profile", icon: (
     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5.121 17.804A13.937 13.937 0 0112 15c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" strokeWidth="1.5"/></svg>
   ) },
 ];
 
 export default function Sidebar({ open, onClose, collapsed = false, onToggleCollapse }) {
+  const { user } = useAuth();
   return (
     <>
       {/* Desktop fixed sidebar */}
@@ -46,7 +51,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
           </button>
         </div>
         <nav className="p-3 space-y-1">
-          {navItems.map((item) => (
+          {navItems.filter(item => !item.adminOnly || user?.role === 'admin').map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -93,7 +98,7 @@ export default function Sidebar({ open, onClose, collapsed = false, onToggleColl
                 </button>
               </div>
               <nav className="p-3 space-y-1">
-                {navItems.map((item) => (
+                {navItems.filter(item => !item.adminOnly || user?.role === 'admin').map((item) => (
                   <NavLink
                     key={item.to}
                     to={item.to}

@@ -21,6 +21,7 @@ import Notifications from "./pages/Notifications.jsx";
 import PayInstallment from "./pages/PayInstallment.jsx";
 import Login from "./pages/Login.jsx";
 import Profile from "./pages/Profile.jsx";
+import UserManagement from "./pages/UserManagement.jsx";
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastProvider } from './components/ui/ToastProvider.jsx';
 import UnauthPage from './components/UnauthPage.jsx';
@@ -102,6 +103,7 @@ function AnimatedRoutes() {
           <Route path="/add-baana" element={<Private><AddBaana /></Private>} />
           <Route path="/add-beam" element={<Private><AddBeam /></Private>} />
           <Route path="/profile" element={<Private><Profile /></Private>} />
+          <Route path="/user-management" element={<Private><UserManagement /></Private>} />
         </Routes>
       </motion.div>
     </AnimatePresence>

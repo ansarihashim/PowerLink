@@ -12,6 +12,7 @@ import ConfirmDialog from "../components/ui/ConfirmDialog.jsx";
 import { useToast } from "../components/ui/ToastProvider.jsx";
 import PageTransitionOverlay from "../components/ui/PageTransitionOverlay.jsx";
 import Spinner from "../components/ui/Spinner.jsx";
+import { handleApiError } from "../utils/errorHandler.js";
 
 export default function Baana() {
   const [sortKey, setSortKey] = useState("date");
@@ -53,12 +54,46 @@ export default function Baana() {
 
   function openAdd(){ setEditing('new'); setForm({ date: new Date().toISOString().slice(0,10), sacks: '' }); }
   function openEdit(rec){ setEditing(rec); setForm({ date: rec.date?.slice(0,10) || '', sacks: rec.sacks }); }
-  async function save(e){ e.preventDefault(); if(!editing) return; setSaving(true); try { const payload = { date: form.date, sacks: Number(form.sacks) }; if(editing==='new'){ await api.baana.create(payload); push({ type:'success', title:'Record Added', message:'Baana record created.' }); } else { await api.baana.update(editing.id || editing._id, payload); push({ type:'success', title:'Record Updated', message:'Changes saved.' }); } setEditing(null); setSaving(false); // refresh list
-      // naive refetch reusing effect deps by toggling page or resetting
-      setPage(1); // triggers effect
-    } catch(err){ push({ type:'error', title:'Save Failed', message: err.message }); setSaving(false); } }
+  async function save(e){ 
+    e.preventDefault(); 
+    if(!editing) return; 
+    setSaving(true); 
+    try { 
+      const payload = { date: form.date, sacks: Number(form.sacks) }; 
+      if(editing==='new'){ 
+        await api.baana.create(payload); 
+        push({ type:'success', title:'Record Added', message:'Baana record created.' }); 
+      } else { 
+        await api.baana.update(editing.id || editing._id, payload); 
+        push({ type:'success', title:'Record Updated', message:'Changes saved.' }); 
+      } 
+      setEditing(null); 
+      setSaving(false);
+      setPage(1); // triggers effect to refresh list
+    } catch(err){ 
+      setSaving(false);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Save Failed', message: err.message }); 
+      }
+    } 
+  }
   function startDelete(id){ setDeleteId(id); }
-  async function confirmDelete(){ if(!deleteId) return; try { await api.baana.remove(deleteId); push({ type:'success', title:'Record Deleted', message:'Baana record removed.' }); setDeleteId(null); setRows(r=> r.filter(x => x.id !== deleteId)); } catch(err){ push({ type:'error', title:'Delete Failed', message: err.message }); setDeleteId(null); } }
+  async function confirmDelete(){ 
+    if(!deleteId) return; 
+    try { 
+      await api.baana.remove(deleteId); 
+      push({ type:'success', title:'Record Deleted', message:'Baana record removed.' }); 
+      setDeleteId(null); 
+      setRows(r=> r.filter(x => x.id !== deleteId)); 
+    } catch(err){ 
+      setDeleteId(null);
+      // Use global error handler for permission errors
+      if (!handleApiError(err, { push })) {
+        push({ type:'error', title:'Delete Failed', message: err.message }); 
+      }
+    } 
+  }
   function cancelDelete(){ setDeleteId(null); }
 
   return (

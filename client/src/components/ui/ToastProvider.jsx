@@ -52,28 +52,45 @@ export function useToast() {
 
 function ToastItem({ toast, onClose }) {
   const colors = toast.type === 'success'
-    ? 'border-teal-300 bg-teal-50 text-teal-800'
+    ? 'border-teal-200/50 bg-gradient-to-br from-teal-50 via-cyan-50 to-teal-50 text-teal-900'
     : toast.type === 'error'
-      ? 'border-rose-300 bg-rose-50 text-rose-800'
+      ? 'border-rose-200/50 bg-gradient-to-br from-rose-50 via-pink-50 to-rose-50 text-rose-900'
       : toast.type === 'warning'
-        ? 'border-amber-300 bg-amber-50 text-amber-800'
-        : 'border-slate-300 bg-white text-slate-800';
+        ? 'border-amber-200/50 bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50 text-amber-900'
+        : 'border-slate-200/50 bg-gradient-to-br from-white via-slate-50 to-white text-slate-800';
+  
+  const progressBar = toast.type === 'success'
+    ? 'bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-600'
+    : toast.type === 'error'
+      ? 'bg-gradient-to-r from-rose-500 via-pink-500 to-rose-600'
+      : toast.type === 'warning'
+        ? 'bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600'
+        : 'bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600';
+  
+  const closeButtonColor = toast.type === 'success'
+    ? 'text-teal-600 hover:bg-teal-100'
+    : toast.type === 'error'
+      ? 'text-rose-600 hover:bg-rose-100'
+      : toast.type === 'warning'
+        ? 'text-amber-600 hover:bg-amber-100'
+        : 'text-slate-500 hover:bg-slate-100';
+  
   return (
     <div
-      className={`pointer-events-auto relative overflow-hidden rounded-lg border shadow-sm backdrop-blur-sm transition-all ${colors}`}
+      className={`pointer-events-auto relative overflow-hidden rounded-xl border shadow-lg backdrop-blur-sm transition-all ${colors}`}
       role="status"
       aria-live="polite"
     >
       <button
         onClick={onClose}
-        className="absolute right-1 top-1 rounded p-1 text-xs text-slate-500 hover:bg-black/5"
+        className={`absolute right-1.5 top-1.5 rounded-md p-1 text-xs transition-colors ${closeButtonColor}`}
         aria-label="Close notification"
       >✕</button>
-      <div className="p-3 pr-6">
-        {toast.title && <div className="mb-0.5 text-sm font-semibold leading-snug">{toast.title}</div>}
-        <div className="text-xs leading-relaxed">{toast.message}</div>
+      <div className="p-4 pr-8">
+        {toast.title && <div className="mb-1 text-sm font-semibold leading-snug">{toast.title}</div>}
+        <div className="text-xs leading-relaxed opacity-90">{toast.message}</div>
       </div>
-      <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-teal-500 via-cyan-500 to-teal-600 animate-[shrink_3.5s_linear_forwards]" />
+      <div className={`absolute bottom-0 left-0 h-1 w-full ${progressBar} animate-[shrink_3.5s_linear_forwards]`} />
       <style>{`@keyframes shrink { from { transform: scaleX(1); } to { transform: scaleX(0); } } .animate-[shrink_3.5s_linear_forwards]{ transform-origin:left; }`}</style>
     </div>
   );
