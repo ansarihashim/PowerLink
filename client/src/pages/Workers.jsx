@@ -150,24 +150,29 @@ export default function Workers() {
       </div>
       {/* Filters */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <input value={q} onChange={(e)=>setQ(e.target.value)} className="rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" placeholder="Search by name" />
-        </div>
-        <div className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-          <span>Sort by:</span>
-          <SortSelect
-            value={sortKey}
-            onChange={(e)=>setSortKey(e.target.value)}
-            options={[
-              { value: 'name', label: 'Name' },
-              { value: 'joiningDate', label: 'Joining Date' },
-              { value: 'totalLoan', label: 'Loan' },
-              { value: 'remainingLoan', label: 'Remaining' },
-            ]}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+          <input 
+            value={q} 
+            onChange={(e)=>setQ(e.target.value)} 
+            className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm hover:border-teal-300 hover:shadow-sm hover:shadow-teal-200/50 focus:border-teal-400 focus:ring-2 focus:ring-teal-200 transition-all duration-200" 
+            placeholder="Search by name" 
           />
-          <Button variant="outline" className="px-2 py-1" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
-            {sortDir === 'asc' ? 'Asc' : 'Desc'}
-          </Button>
+          <div className="flex items-center gap-2 text-sm text-slate-600">
+            <span className="whitespace-nowrap">Sort by:</span>
+            <SortSelect
+              value={sortKey}
+              onChange={(e)=>setSortKey(e.target.value)}
+              options={[
+                { value: 'name', label: 'Name' },
+                { value: 'joiningDate', label: 'Joining Date' },
+                { value: 'totalLoan', label: 'Loan' },
+                { value: 'remainingLoan', label: 'Remaining' },
+              ]}
+            />
+            <Button variant="outline" className="px-2 py-1 whitespace-nowrap" onClick={()=>setSortDir(d=> d==='asc'?'desc':'asc')}>
+              {sortDir === 'asc' ? 'Asc' : 'Desc'}
+            </Button>
+          </div>
         </div>
       </Card>
       {/* Table */}
