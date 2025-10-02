@@ -6,7 +6,7 @@ Node.js + Express + MongoDB backend providing authentication for the PowerLink a
 - Express (ESM)
 - MongoDB + Mongoose
 - JWT (access + refresh) with rotation (tokenVersion)
-- bcrypt password hashing
+- bcryptjs password hashing (pure JavaScript, deployment-friendly)
 - zod validation
 - Helmet, CORS, compression, rate limiting, morgan logging
 
