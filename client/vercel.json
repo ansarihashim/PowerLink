@@ -4,10 +4,29 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "vite",
-  "env": {
-    "VITE_AUTH0_DOMAIN": "@vite_auth0_domain",
-    "VITE_AUTH0_CLIENT_ID": "@vite_auth0_client_id",
-    "VITE_AUTH0_REDIRECT_URI": "@vite_auth0_redirect_uri",
-    "VITE_API_URL": "@vite_api_url"
-  }
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
 }
