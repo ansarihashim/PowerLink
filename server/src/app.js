@@ -14,7 +14,34 @@ const app = express();
 app.set('trust proxy', 1);
 
 app.use(helmet());
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+
+// CORS configuration to handle multiple Vercel URLs
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl)
+    if (!origin) return callback(null, true);
+    
+    // Split CORS_ORIGIN by comma to support multiple origins
+    const allowedOrigins = config.corsOrigin.split(',').map(o => o.trim());
+    
+    // Check if origin matches any allowed origin or is a Vercel preview URL
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed === origin) return true;
+      // Allow all Vercel preview URLs for your project
+      if (origin.includes('.vercel.app')) return true;
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(compression());
 app.use(express.json());
 app.use(cookieParser());
