@@ -2,10 +2,11 @@
   "name": "powerlink-server",
   "version": "0.1.0",
   "type": "module",
-  "main": "src/server.js",
+  "main": "api/index.js",
   "scripts": {
-    "dev": "nodemon --env-file .env src/server.js",
-    "start": "node src/server.js",
+    "dev": "vercel dev",
+    "vercel-build": "echo 'Build complete'",
+    "start:local": "node src/server.js",
     "lint": "echo 'Add linter later'"
   },
   "dependencies": {
