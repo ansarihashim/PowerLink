@@ -1,0 +1,575 @@
+--------iterative factorial--------
+
+number = int(input())
+result = 1
+for value in range(1, number+1):
+    result *= value
+print(result)
+
+
+
+---------recursive factorial--------
+
+def factorial(number):
+    if number == 0:
+        return 1
+    return number * factorial(number-1)
+
+number = int(input())
+print(factorial(number))
+
+
+
+---------iterative binary search-------
+
+numbers = list(map(int, input().split()))
+target = int(input())
+
+left = 0
+right = len(numbers) - 1
+
+while left <= right:
+    mid = (left + right) // 2
+    if numbers[mid] == target:
+        print(mid)
+        break
+    if numbers[mid] < target:
+        left = mid + 1
+    else:
+        right = mid - 1
+
+
+-----------recursive binary sarch-------
+
+def binary_search(numbers, left, right, target):
+    if left > right:
+        return -1
+    mid = (left + right) // 2
+    if numbers[mid] == target:
+        return mid
+    if target < numbers[mid]:
+        return binary_search(numbers, left, mid-1, target)
+    return binary_search(numbers, mid+1, right, target)
+
+numbers = list(map(int, input().split()))
+target = int(input())
+print(binary_search(numbers, 0, len(numbers)-1, target))
+
+
+----------iterative fibonnaci---------
+
+terms = int(input())
+first = 0
+second = 1
+sequence = []
+for _ in range(terms):
+    sequence.append(first)
+    first, second = second, first + second
+print(sequence)
+
+
+
+---------recusive fibonacci--------
+
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+terms = int(input())
+print([fibonacci(i) for i in range(terms)])
+
+
+------------recursive heap sort---------
+
+def heapify(array, size, index):
+    largest = index
+    left_child = 2*index + 1
+    right_child = 2*index + 2
+
+    if left_child < size and array[left_child] > array[largest]:
+        largest = left_child
+    if right_child < size and array[right_child] > array[largest]:
+        largest = right_child
+    if largest != index:
+        array[index], array[largest] = array[largest], array[index]
+        heapify(array, size, largest)
+
+def heap_sort(array):
+    size = len(array)
+    for index in range(size//2 - 1, -1, -1):
+        heapify(array, size, index)
+    for index in range(size-1, 0, -1):
+        array[index], array[0] = array[0], array[index]
+        heapify(array, index, 0)
+
+array = list(map(int, input().split()))
+heap_sort(array)
+print(array)
+
+
+
+----------recursive quicksort---------
+
+
+def quick_sort(array):
+    if len(array) <= 1:
+        return array
+    pivot = array[0]
+    left_side = [x for x in array[1:] if x <= pivot]
+    right_side = [x for x in array[1:] if x > pivot]
+    return quick_sort(left_side) + [pivot] + quick_sort(right_side)
+
+array = list(map(int, input().split()))
+print(quick_sort(array))
+
+
+--------refcusive merge sort---------
+
+
+
+
+
+------TOWERS OF HANOi--------
+
+def move_disks(number_of_disks, source, auxiliary, destination):
+    if number_of_disks == 1:
+        print(source, "→", destination)
+        return
+    move_disks(number_of_disks-1, source, destination, auxiliary)
+    print(source, "→", destination)
+    move_disks(number_of_disks-1, auxiliary, source, destination)
+
+number_of_disks = int(input())
+move_disks(number_of_disks, "Source", "Auxiliary", "Destination")
+
+
+
+--------MINIMA MAXIMA----------
+
+def min_max(numbers, left, right):
+    if left == right:
+        return numbers[left], numbers[left]
+    mid = (left + right) // 2
+    max1, min1 = min_max(numbers, left, mid)
+    max2, min2 = min_max(numbers, mid+1, right)
+    return max(max1, max2), min(min1, min2)
+
+array = list(map(int, input().split()))
+maximum, minimum = min_max(array, 0, len(array)-1)
+print("Max =", maximum)
+print("Min =", minimum)
+
+
+
+-------MERGE SORt  dnc----------
+
+
+def merge_sort(numbers):
+    if len(numbers) <= 1:
+        return numbers
+    mid = len(numbers) // 2
+    left_half = merge_sort(numbers[:mid])
+    right_half = merge_sort(numbers[mid:])
+    merged = []
+    i = j = 0
+    while i < len(left_half) and j < len(right_half):
+        if left_half[i] <= right_half[j]:
+            merged.append(left_half[i])
+            i += 1
+        else:
+            merged.append(right_half[j])
+            j += 1
+    merged += left_half[i:]
+    merged += right_half[j:]
+    return merged
+
+array = list(map(int, input().split()))
+sorted_array = merge_sort(array)
+print(sorted_array)
+
+
+------------greedy knapsack--------
+
+# Example Input:
+# 3
+# 60 100 120
+# 10 20 30
+# 50
+
+item_count = int(input())
+profits = list(map(int, input().split()))
+weights = list(map(int, input().split()))
+capacity = int(input())
+
+items = []
+for i in range(item_count):
+    ratio = profits[i] / weights[i]
+    items.append((profits[i], weights[i], ratio))
+
+items.sort(key=lambda x: x[2], reverse=True)
+
+value = 0
+remaining = capacity
+
+for profit, weight, ratio in items:
+    if weight <= remaining:
+        value += profit
+        remaining -= weight
+    else:
+        value += ratio * remaining
+        break
+
+print(value)
+
+
+--------mst prims-----------
+
+# Example Input:
+# 4
+# A B C D
+# 5
+# A B 4
+# A C 3
+# B C 1
+# B D 2
+# C D 5
+
+vertex_count = int(input())
+vertex_names = input().split()
+graph = {v:{} for v in vertex_names}
+
+edge_count = int(input())
+for _ in range(edge_count):
+    u, v, w = input().split()
+    w = int(w)
+    graph[u][v] = w
+    graph[v][u] = w
+
+visited = set()
+current = vertex_names[0]
+visited.add(current)
+
+mst = []
+total_cost = 0
+
+while len(visited) < vertex_count:
+    best_weight = 10**9
+    best_edge = None
+    for u in visited:
+        for v in graph[u]:
+            if v not in visited and graph[u][v] < best_weight:
+                best_weight = graph[u][v]
+                best_edge = (u, v)
+    mst.append((best_edge[0], best_edge[1], best_weight))
+    total_cost += best_weight
+    visited.add(best_edge[1])
+
+print(mst)
+print(total_cost)
+
+
+------------mst kruskals------------
+
+
+# Example Input:
+# 5
+# A B 4
+# A C 3
+# B C 1
+# B D 2
+# C D 5
+
+edge_count = int(input())
+edges = []
+vertices = set()
+
+for _ in range(edge_count):
+    u, v, w = input().split()
+    w = int(w)
+    edges.append((u, v, w))
+    vertices.add(u)
+    vertices.add(v)
+
+parent = {}
+for v in vertices:
+    parent[v] = v
+
+def find_set(x):
+    if parent[x] != x:
+        parent[x] = find_set(parent[x])
+    return parent[x]
+
+def join(a, b):
+    parent[find_set(a)] = find_set(b)
+
+edges.sort(key=lambda x: x[2])
+
+mst = []
+total_weight = 0
+
+for u, v, w in edges:
+    if find_set(u) != find_set(v):
+        join(u, v)
+        mst.append((u, v, w))
+        total_weight += w
+
+print(mst)
+print(total_weight)
+
+
+
+-------shortest path using multistage graph-----
+
+
+# Example Input:
+# 4
+# 2 1 3 4 -1
+# 3 2 -1
+# 3 5 -1
+# -1
+# 0
+# 3
+
+node_count = int(input())
+graph = []
+
+for _ in range(node_count):
+    row = list(map(int, input().split()))
+    edges = []
+    i = 0
+    while row[i] != -1:
+        edges.append((row[i], row[i+1]))
+        i += 2
+    graph.append(edges)
+
+start = int(input())
+end = int(input())
+
+cost = [10**9] * node_count
+cost[end] = 0
+
+for node in range(node_count - 2, -1, -1):
+    for next_node, weight in graph[node]:
+        possible = weight + cost[next_node]
+        if possible < cost[node]:
+            cost[node] = possible
+
+print(cost[start])
+
+
+#Nodes: 0 → 1 → 2 → 3
+#Edges and weights:
+
+#0 → 2 (cost 1)
+
+#0 → 3 (cost 4)
+
+#1 → 3 (cost 2)
+
+#2 → 3 (cost 5)
+
+-----------all pairs using dynamic preogramming--------
+
+# Example Input:
+# 4
+# 0 3 999 5
+# 2 0 999 4
+# 999 1 0 999
+# 999 999 2 0
+
+node_count = int(input())
+distance = []
+for _ in range(node_count):
+    distance.append(list(map(int, input().split())))
+
+for k in range(node_count):
+    for i in range(node_count):
+        for j in range(node_count):
+            if distance[i][k] + distance[k][j] < distance[i][j]:
+                distance[i][j] = distance[i][k] + distance[k][j]
+
+print(distance)
+
+#0 → 1 = 3
+#0 → 3 = 5
+#1 → 0 = 2
+#1 → 3 = 4
+#2 → 1 = 1
+#3 → 2 = 2
+
+---------graph coloring using backtracking-------
+
+# Example Input:
+# 4
+# A B C D
+# 4
+# A B
+# B C
+# C D
+# D A
+# 3
+
+vertex_count = int(input())
+vertex_names = input().split()
+
+graph = {v: [] for v in vertex_names}
+
+edge_count = int(input())
+for _ in range(edge_count):
+    u, v = input().split()
+    graph[u].append(v)
+    graph[v].append(u)
+
+max_colors = int(input())
+
+colors = {v: 0 for v in vertex_names}
+
+def is_safe(vertex, color):
+    for neighbor in graph[vertex]:
+        if colors[neighbor] == color:
+            return False
+    return True
+
+def color_graph(index):
+    if index == vertex_count:
+        print(colors)
+        return True
+    node = vertex_names[index]
+    for color in range(1, max_colors+1):
+        if is_safe(node, color):
+            colors[node] = color
+            if color_graph(index + 1):
+                return True
+    colors[node] = 0
+    return False
+
+color_graph(0)
+
+
+------8 queens general backtracking--------
+
+# Example Input:
+# 8
+
+n = int(input())
+board = [[0]*n for _ in range(n)]
+
+def safe(row, col):
+    for c in range(col):
+        if board[row][c] == 1:
+            return False
+    r, c = row, col
+    while r >= 0 and c >= 0:
+        if board[r][c] == 1:
+            return False
+        r -= 1
+        c -= 1
+    r, c = row, col
+    while r < n and c >= 0:
+        if board[r][c] == 1:
+            return False
+        r += 1
+        c -= 1
+    return True
+
+def place(col):
+    if col == n:
+        for r in board:
+            print(r)
+        print()
+        return True
+    found = False
+    for row in range(n):
+        if safe(row, col):
+            board[row][col] = 1
+            if place(col+1):
+                found = True
+            board[row][col] = 0
+    return found
+
+place(0)
+
+
+
+-------8queens recurive backtracking----------
+
+# Example Input:
+# 8
+
+n = int(input())
+queens = [-1] * n
+
+def safe(row, col):
+    for r in range(row):
+        if queens[r] == col or abs(queens[r]-col) == abs(r-row):
+            return False
+    return True
+
+def solve(row):
+    if row == n:
+        print(queens)
+        return True
+    ok = False
+    for col in range(n):
+        if safe(row, col):
+            queens[row] = col
+            if solve(row+1):
+                ok = True
+            queens[row] = -1
+    return ok
+
+solve(0)
+
+
+
+-------0/1 knapsack using branch and bound--------------
+
+# Example Input:
+# 4
+# 40 30 50 10
+# 2 5 10 5
+# 16
+
+item_count = int(input())
+profits = list(map(int, input().split()))
+weights = list(map(int, input().split()))
+capacity = int(input())
+
+items = []
+for i in range(item_count):
+    items.append((profits[i], weights[i], profits[i] / weights[i]))
+
+items.sort(key=lambda x: x[2], reverse=True)
+
+best_profit = 0
+
+def bound(index, current_weight, current_profit):
+    total = current_profit
+    while index < item_count and current_weight + items[index][1] <= capacity:
+        current_weight += items[index][1]
+        total += items[index][0]
+        index += 1
+    if index < item_count:
+        total += (capacity - current_weight) * items[index][2]
+    return total
+
+def explore(index, current_weight, current_profit):
+    global best_profit
+    if current_weight > capacity:
+        return
+    if current_profit > best_profit:
+        best_profit = current_profit
+    if index == item_count:
+        return
+    if bound(index, current_weight, current_profit) <= best_profit:
+        return
+    explore(index + 1,
+            current_weight + items[index][1],
+            current_profit + items[index][0])
+    explore(index + 1,
+            current_weight,
+            current_profit)
+
+explore(0, 0, 0)
+print(best_profit)
