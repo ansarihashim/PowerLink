@@ -15,7 +15,7 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
-// CORS configuration to handle multiple Vercel URLs
+// CORS configuration to handle multiple Vercel URLs and Railway backend
 const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps or curl)
@@ -24,11 +24,13 @@ const corsOptions = {
     // Split CORS_ORIGIN by comma to support multiple origins
     const allowedOrigins = config.corsOrigin.split(',').map(o => o.trim());
     
-    // Check if origin matches any allowed origin or is a Vercel preview URL
+    // Check if origin matches any allowed origin or is a Vercel preview URL or Railway URL
     const isAllowed = allowedOrigins.some(allowed => {
       if (allowed === origin) return true;
-      // Allow all Vercel preview URLs for your project
+      // Allow all Vercel preview URLs
       if (origin.includes('.vercel.app')) return true;
+      // Allow Railway URLs
+      if (origin.includes('.railway.app')) return true;
       return false;
     });
     
@@ -38,7 +40,10 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['set-cookie']
 };
 
 app.use(cors(corsOptions));

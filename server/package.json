@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vercel dev",
     "vercel-build": "echo 'Build complete'",
+    "start": "node src/server.js",
     "start:local": "node src/server.js",
     "lint": "echo 'Add linter later'"
   },
